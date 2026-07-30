@@ -3,6 +3,10 @@
 :root {
   --background: #f4f6f9;
   --foreground: #0f172a;
+  --muted: #64748b;
+  --muted-fg: #94a3b8;
+  --surface-muted: #f1f5f9;
+  --surface-hover: #f8fafc;
 
   --navy-950: #0b1220;
   --navy-900: #0f1b30;
@@ -15,17 +19,44 @@
 
   --status-green: #16a34a;
   --status-green-bg: #ecfdf3;
+  --status-green-ring: #bbf7d0;
   --status-amber: #d97706;
   --status-amber-bg: #fffbeb;
+  --status-amber-ring: #fde68a;
   --status-red: #dc2626;
   --status-red-bg: #fef2f2;
+  --status-red-ring: #fecaca;
   --status-blue: #2563eb;
   --status-blue-bg: #eff6ff;
+  --status-blue-ring: #bfdbfe;
   --status-gray: #64748b;
   --status-gray-bg: #f1f5f9;
+  --status-gray-ring: #e2e8f0;
 
   --border-subtle: #e2e8f0;
   --card-bg: #ffffff;
+  --header-bg: #ffffff;
+  --scrollbar: #cbd5e1;
+  --scrollbar-hover: #94a3b8;
+
+  /* Chart palette — light defaults; overridden in dark */
+  --chart-1: #2563eb;
+  --chart-2: #0ea5a4;
+  --chart-3: #d97706;
+  --chart-4: #dc2626;
+  --chart-5: #7c3aed;
+  --chart-6: #16a34a;
+  --chart-7: #64748b;
+  --chart-8: #0891b2;
+  --chart-9: #be185d;
+  --chart-grid: #f1f5f9;
+  --chart-tick: #94a3b8;
+  --chart-axis: #475569;
+  --chart-tooltip-bg: #ffffff;
+  --chart-tooltip-border: #e2e8f0;
+  --chart-tooltip-fg: #0f172a;
+  --chart-cursor: #f8fafc;
+  --chart-marker: #dc2626;
 
   /* Auth pages — ibTech green signal */
   --auth-ink: #132018;
@@ -35,6 +66,115 @@
   --auth-green-deep: #2f7a35;
   --auth-green-soft: rgba(63, 158, 69, 0.16);
   --auth-panel: #f3f7f4;
+}
+
+html.dark {
+  --background: #0b1220;
+  --foreground: #e2e8f0;
+  --muted: #94a3b8;
+  --muted-fg: #64748b;
+  --surface-muted: #1e293b;
+  --surface-hover: #162033;
+
+  --accent-600: #3b82f6;
+  --accent-500: #60a5fa;
+  --teal-500: #2dd4bf;
+
+  --status-green: #4ade80;
+  --status-green-bg: rgba(74, 222, 128, 0.12);
+  --status-green-ring: rgba(74, 222, 128, 0.28);
+  --status-amber: #fbbf24;
+  --status-amber-bg: rgba(251, 191, 36, 0.12);
+  --status-amber-ring: rgba(251, 191, 36, 0.28);
+  --status-red: #f87171;
+  --status-red-bg: rgba(248, 113, 113, 0.12);
+  --status-red-ring: rgba(248, 113, 113, 0.28);
+  --status-blue: #60a5fa;
+  --status-blue-bg: rgba(96, 165, 250, 0.12);
+  --status-blue-ring: rgba(96, 165, 250, 0.28);
+  --status-gray: #94a3b8;
+  --status-gray-bg: rgba(148, 163, 184, 0.12);
+  --status-gray-ring: rgba(148, 163, 184, 0.28);
+
+  --border-subtle: #1e293b;
+  --card-bg: #111827;
+  --header-bg: #0f172a;
+  --scrollbar: #334155;
+  --scrollbar-hover: #475569;
+
+  --chart-1: #60a5fa;
+  --chart-2: #2dd4bf;
+  --chart-3: #fbbf24;
+  --chart-4: #f87171;
+  --chart-5: #a78bfa;
+  --chart-6: #4ade80;
+  --chart-7: #94a3b8;
+  --chart-8: #22d3ee;
+  --chart-9: #f472b6;
+  --chart-grid: #1e293b;
+  --chart-tick: #64748b;
+  --chart-axis: #cbd5e1;
+  --chart-tooltip-bg: #0f172a;
+  --chart-tooltip-border: #334155;
+  --chart-tooltip-fg: #e2e8f0;
+  --chart-cursor: #1e293b;
+  --chart-marker: #f87171;
+}
+
+/* System preference when no explicit light/dark class yet (pre-hydration) */
+@media (prefers-color-scheme: dark) {
+  :root:not(.light):not(.dark) {
+    --background: #0b1220;
+    --foreground: #e2e8f0;
+    --muted: #94a3b8;
+    --muted-fg: #64748b;
+    --surface-muted: #1e293b;
+    --surface-hover: #162033;
+
+    --accent-600: #3b82f6;
+    --accent-500: #60a5fa;
+    --teal-500: #2dd4bf;
+
+    --status-green: #4ade80;
+    --status-green-bg: rgba(74, 222, 128, 0.12);
+    --status-green-ring: rgba(74, 222, 128, 0.28);
+    --status-amber: #fbbf24;
+    --status-amber-bg: rgba(251, 191, 36, 0.12);
+    --status-amber-ring: rgba(251, 191, 36, 0.28);
+    --status-red: #f87171;
+    --status-red-bg: rgba(248, 113, 113, 0.12);
+    --status-red-ring: rgba(248, 113, 113, 0.28);
+    --status-blue: #60a5fa;
+    --status-blue-bg: rgba(96, 165, 250, 0.12);
+    --status-blue-ring: rgba(96, 165, 250, 0.28);
+    --status-gray: #94a3b8;
+    --status-gray-bg: rgba(148, 163, 184, 0.12);
+    --status-gray-ring: rgba(148, 163, 184, 0.28);
+
+    --border-subtle: #1e293b;
+    --card-bg: #111827;
+    --header-bg: #0f172a;
+    --scrollbar: #334155;
+    --scrollbar-hover: #475569;
+
+    --chart-1: #60a5fa;
+    --chart-2: #2dd4bf;
+    --chart-3: #fbbf24;
+    --chart-4: #f87171;
+    --chart-5: #a78bfa;
+    --chart-6: #4ade80;
+    --chart-7: #94a3b8;
+    --chart-8: #22d3ee;
+    --chart-9: #f472b6;
+    --chart-grid: #1e293b;
+    --chart-tick: #64748b;
+    --chart-axis: #cbd5e1;
+    --chart-tooltip-bg: #0f172a;
+    --chart-tooltip-border: #334155;
+    --chart-tooltip-fg: #e2e8f0;
+    --chart-cursor: #1e293b;
+    --chart-marker: #f87171;
+  }
 }
 
 @theme inline {
@@ -52,14 +192,34 @@ body {
 
 ::-webkit-scrollbar { width: 8px; height: 8px; }
 ::-webkit-scrollbar-track { background: transparent; }
-::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 8px; }
-::-webkit-scrollbar-thumb:hover { background: #94a3b8; }
+::-webkit-scrollbar-thumb { background: var(--scrollbar); border-radius: 8px; }
+::-webkit-scrollbar-thumb:hover { background: var(--scrollbar-hover); }
 
 @keyframes pulse-dot {
   0%, 100% { opacity: 1; }
   50% { opacity: 0.35; }
 }
 .live-dot { animation: pulse-dot 1.6s ease-in-out infinite; }
+
+/* Dashboard entrance motion */
+@keyframes dash-enter {
+  from { opacity: 0; transform: translateY(10px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+.dash-enter {
+  animation: dash-enter 0.45s cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+.dash-enter-slow {
+  animation: dash-enter 0.55s cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .dash-enter,
+  .dash-enter-slow,
+  .live-dot {
+    animation: none !important;
+  }
+}
 
 /* ——— Auth shell ——— */
 .auth-shell {

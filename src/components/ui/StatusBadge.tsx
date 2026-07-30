@@ -21,11 +21,19 @@ const STATUS_TONE: Record<string, Tone> = {
 };
 
 const TONE_CLASSES: Record<Tone, string> = {
-  green: "bg-[var(--status-green-bg)] text-[var(--status-green)] ring-1 ring-inset ring-green-200",
-  amber: "bg-[var(--status-amber-bg)] text-[var(--status-amber)] ring-1 ring-inset ring-amber-200",
-  red: "bg-[var(--status-red-bg)] text-[var(--status-red)] ring-1 ring-inset ring-red-200",
-  blue: "bg-[var(--status-blue-bg)] text-[var(--status-blue)] ring-1 ring-inset ring-blue-200",
-  gray: "bg-[var(--status-gray-bg)] text-[var(--status-gray)] ring-1 ring-inset ring-slate-200",
+  green: "bg-[var(--status-green-bg)] text-[var(--status-green)] ring-1 ring-inset ring-[var(--status-green-ring)]",
+  amber: "bg-[var(--status-amber-bg)] text-[var(--status-amber)] ring-1 ring-inset ring-[var(--status-amber-ring)]",
+  red: "bg-[var(--status-red-bg)] text-[var(--status-red)] ring-1 ring-inset ring-[var(--status-red-ring)]",
+  blue: "bg-[var(--status-blue-bg)] text-[var(--status-blue)] ring-1 ring-inset ring-[var(--status-blue-ring)]",
+  gray: "bg-[var(--status-gray-bg)] text-[var(--status-gray)] ring-1 ring-inset ring-[var(--status-gray-ring)]",
+};
+
+const DOT: Record<Tone, string> = {
+  green: "bg-[var(--status-green)]",
+  amber: "bg-[var(--status-amber)]",
+  red: "bg-[var(--status-red)]",
+  blue: "bg-[var(--status-blue)]",
+  gray: "bg-[var(--status-gray)]",
 };
 
 function toLabel(status: string) {
@@ -40,9 +48,7 @@ export function StatusBadge({ status, label }: { status: string; label?: string 
   const tone = STATUS_TONE[status] ?? "gray";
   return (
     <span className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-medium ${TONE_CLASSES[tone]}`}>
-      <span className={`h-1.5 w-1.5 rounded-full ${
-        tone === "green" ? "bg-green-500" : tone === "amber" ? "bg-amber-500" : tone === "red" ? "bg-red-500" : tone === "blue" ? "bg-blue-500" : "bg-slate-400"
-      }`} />
+      <span className={`h-1.5 w-1.5 rounded-full ${DOT[tone]}`} />
       {label ?? toLabel(status)}
     </span>
   );

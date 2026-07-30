@@ -109,6 +109,58 @@ export function getSnapshotSeries(daysOrOpts: number | SnapshotSeriesOpts = 30) 
   ).reverse();
 }
 
+/** Live KPI breakdown by customer type for a given metric. */
+export function getKpiBreakdownByCustomerType(metric: string, customerType?: string) {
+  const metricSql: Record<string, string> = {
+    totalItems: "COUNT(*)",
+    withCustomers: "SUM(CASE WHEN i.currentStatus='ACTIVE' THEN 1 ELSE 0 END)",
+    inLaundry: "SUM(CASE WHEN i.currentStatus='IN_LAUNDRY' THEN 1 ELSE 0 END)",
+    ready: "SUM(CASE WHEN i.currentStatus='READY' THEN 1 ELSE 0 END)",
+    missing: "SUM(CASE WHEN i.missing=1 THEN 1 ELSE 0 END)",
+    nearEol: "SUM(CASE WHEN i.lifecycleStatus='NEAR_END_OF_LIFE' THEN 1 ELSE 0 END)",
+    disposalRequired: "SUM(CASE WHEN i.lifecycleStatus='DISPOSAL_REQUIRED' AND i.disposed=0 THEN 1 ELSE 0 END)",
+    lossValue: "SUM(CASE WHEN i.missing=1 THEN i.value ELSE 0 END)",
+  };
+  const expr = metricSql[metric] ?? "COUNT(*)";
+  const where = customerType ? "WHERE c.type = ?" : "";
+  const params = customerType ? [customerType] : [];
+  return all<{ name: string; value: number }>(
+    `SELECT c.type as name, COALESCE(${expr}, 0) as value
+     FROM Item i JOIN Customer c ON c.id = i.customerId
+     ${where}
+     GROUP BY c.type
+     ORDER BY value DESC`,
+    params
+  );
+}
+
+/** Live KPI breakdown by item category. */
+export function getKpiBreakdownByItemType(metric: string, customerType?: string) {
+  const metricSql: Record<string, string> = {
+    totalItems: "COUNT(*)",
+    withCustomers: "SUM(CASE WHEN i.currentStatus='ACTIVE' THEN 1 ELSE 0 END)",
+    inLaundry: "SUM(CASE WHEN i.currentStatus='IN_LAUNDRY' THEN 1 ELSE 0 END)",
+    ready: "SUM(CASE WHEN i.currentStatus='READY' THEN 1 ELSE 0 END)",
+    missing: "SUM(CASE WHEN i.missing=1 THEN 1 ELSE 0 END)",
+    nearEol: "SUM(CASE WHEN i.lifecycleStatus='NEAR_END_OF_LIFE' THEN 1 ELSE 0 END)",
+    disposalRequired: "SUM(CASE WHEN i.lifecycleStatus='DISPOSAL_REQUIRED' AND i.disposed=0 THEN 1 ELSE 0 END)",
+    lossValue: "SUM(CASE WHEN i.missing=1 THEN i.value ELSE 0 END)",
+  };
+  const expr = metricSql[metric] ?? "COUNT(*)";
+  const where = customerType ? "WHERE c.type = ?" : "";
+  const params = customerType ? [customerType] : [];
+  return all<{ name: string; value: number }>(
+    `SELECT it.category as name, COALESCE(${expr}, 0) as value
+     FROM Item i
+     JOIN ItemType it ON it.id = i.itemTypeId
+     JOIN Customer c ON c.id = i.customerId
+     ${where}
+     GROUP BY it.category
+     ORDER BY value DESC`,
+    params
+  );
+}
+
 /** Shift a YYYY-MM-DD by `deltaDays` (negative = earlier). */
 export function shiftDate(isoDate: string, deltaDays: number) {
   const d = new Date(`${isoDate}T12:00:00Z`);
@@ -128,15 +180,75 @@ export const ZONE_STAGES = [
   { key: "QUALITY_CHECK", label: "Quality Check" },
   { key: "READY", label: "Ready" },
   { key: "DISPATCH", label: "Dispatch" },
-];
+] as const;
 
-export function getProcessFlow() {
-  const rows = all<{ currentZone: string; c: number }>(
-    `SELECT currentZone, COUNT(*) as c FROM Item WHERE currentZone IN (${ZONE_STAGES.map(() => "?").join(",")}) GROUP BY currentZone`,
-    ZONE_STAGES.map((s) => s.key)
+/** Max expected dwell time (hours) before an item is considered stuck in a stage. */
+export const ZONE_STAGE_MAX_HOURS: Record<string, number> = {
+  RECEIVING: 4,
+  SORTING: 2,
+  WASHING: 3,
+  DRYING: 3,
+  FOLDING: 4,
+  QUALITY_CHECK: 2,
+  READY: 24,
+  DISPATCH: 6,
+};
+
+export type ProcessFlowStage = {
+  key: string;
+  label: string;
+  count: number;
+  pct: number;
+  stuck: number;
+  maxHours: number;
+  anomaly: "none" | "amber" | "red";
+};
+
+export function getProcessFlow(): ProcessFlowStage[] {
+  const cutoffs = ZONE_STAGES.map((s) =>
+    new Date(Date.now() - ZONE_STAGE_MAX_HOURS[s.key] * 3600 * 1000).toISOString()
   );
-  const map = new Map(rows.map((r) => [r.currentZone, r.c]));
-  return ZONE_STAGES.map((s) => ({ ...s, count: map.get(s.key) ?? 0 }));
+  const stuckCase = ZONE_STAGES.map((s) => `WHEN currentZone = '${s.key}' AND lastReadAt <= ? THEN 1`).join(" ");
+  const rows = all<{ currentZone: string; c: number; stuck: number }>(
+    `SELECT currentZone, COUNT(*) as c,
+      SUM(CASE ${stuckCase} ELSE 0 END) as stuck
+     FROM Item WHERE currentZone IN (${ZONE_STAGES.map(() => "?").join(",")})
+     GROUP BY currentZone`,
+    [...cutoffs, ...ZONE_STAGES.map((s) => s.key)]
+  );
+  const map = new Map(rows.map((r) => [r.currentZone, r]));
+  const base = ZONE_STAGES.map((s) => {
+    const row = map.get(s.key);
+    return {
+      ...s,
+      count: row?.c ?? 0,
+      stuck: row?.stuck ?? 0,
+      maxHours: ZONE_STAGE_MAX_HOURS[s.key],
+    };
+  });
+  const total = base.reduce((sum, s) => sum + s.count, 0);
+  const mean = total / base.length;
+  const variance = base.reduce((sum, s) => sum + (s.count - mean) ** 2, 0) / base.length;
+  const stddev = Math.sqrt(variance);
+
+  return base.map((s) => {
+    const stuckRatio = s.count > 0 ? s.stuck / s.count : 0;
+    // Volume outliers (true bottlenecks) plus escalation when many items exceed dwell SLA.
+    let anomaly: ProcessFlowStage["anomaly"] = "none";
+    if (s.count >= mean + 1.5 * stddev) anomaly = "red";
+    else if (s.count >= mean + 0.75 * stddev) anomaly = "amber";
+    if (stuckRatio >= 0.5) {
+      if (anomaly === "none") anomaly = "amber";
+      else if (anomaly === "amber") anomaly = "red";
+    } else if (s.stuck > 0 && anomaly === "none") {
+      anomaly = "amber";
+    }
+    return {
+      ...s,
+      pct: total > 0 ? (s.count / total) * 100 : 0,
+      anomaly,
+    };
+  });
 }
 
 // ---------------------------------------------------------------------------

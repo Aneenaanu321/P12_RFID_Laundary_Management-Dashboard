@@ -1,22 +1,249 @@
 "use client";
 
+import { useEffect, useRef, useState, type ReactNode } from "react";
+import { useRouter } from "next/navigation";
 import {
   AreaChart, Area, BarChart, Bar, LineChart, Line, PieChart, Pie, Cell,
-  XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Legend,
+  XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Legend, ReferenceDot,
 } from "recharts";
+import { Download } from "lucide-react";
+import type { ChartMarker } from "@/lib/chart-utils";
 
-const COLORS = ["#2563eb", "#0ea5a4", "#d97706", "#dc2626", "#7c3aed", "#16a34a", "#64748b", "#0891b2", "#be185d"];
+export type { ChartMarker };
 
-const tooltipStyle = {
-  fontSize: 12,
-  borderRadius: 8,
-  border: "1px solid #e2e8f0",
-  boxShadow: "0 4px 12px rgba(0,0,0,0.08)",
+type ChartTheme = {
+  palette: string[];
+  grid: string;
+  tick: string;
+  axis: string;
+  tooltipBg: string;
+  tooltipBorder: string;
+  tooltipFg: string;
+  cursor: string;
+  marker: string;
 };
 
+const FALLBACK_THEME: ChartTheme = {
+  palette: ["#2563eb", "#0ea5a4", "#d97706", "#dc2626", "#7c3aed", "#16a34a", "#64748b", "#0891b2", "#be185d"],
+  grid: "#f1f5f9",
+  tick: "#94a3b8",
+  axis: "#475569",
+  tooltipBg: "#ffffff",
+  tooltipBorder: "#e2e8f0",
+  tooltipFg: "#0f172a",
+  cursor: "#f8fafc",
+  marker: "#dc2626",
+};
+
+function cssVar(name: string, fallback: string) {
+  if (typeof window === "undefined") return fallback;
+  const value = getComputedStyle(document.documentElement).getPropertyValue(name).trim();
+  return value || fallback;
+}
+
+function resolveColorToken(raw: string | undefined, fallback: string) {
+  if (!raw) return fallback;
+  if (raw.startsWith("var(")) {
+    const name = raw.slice(4, -1).trim();
+    return cssVar(name, fallback);
+  }
+  return raw;
+}
+
+function readChartTheme(): ChartTheme {
+  return {
+    palette: [
+      cssVar("--chart-1", FALLBACK_THEME.palette[0]),
+      cssVar("--chart-2", FALLBACK_THEME.palette[1]),
+      cssVar("--chart-3", FALLBACK_THEME.palette[2]),
+      cssVar("--chart-4", FALLBACK_THEME.palette[3]),
+      cssVar("--chart-5", FALLBACK_THEME.palette[4]),
+      cssVar("--chart-6", FALLBACK_THEME.palette[5]),
+      cssVar("--chart-7", FALLBACK_THEME.palette[6]),
+      cssVar("--chart-8", FALLBACK_THEME.palette[7]),
+      cssVar("--chart-9", FALLBACK_THEME.palette[8]),
+    ],
+    grid: cssVar("--chart-grid", FALLBACK_THEME.grid),
+    tick: cssVar("--chart-tick", FALLBACK_THEME.tick),
+    axis: cssVar("--chart-axis", FALLBACK_THEME.axis),
+    tooltipBg: cssVar("--chart-tooltip-bg", FALLBACK_THEME.tooltipBg),
+    tooltipBorder: cssVar("--chart-tooltip-border", FALLBACK_THEME.tooltipBorder),
+    tooltipFg: cssVar("--chart-tooltip-fg", FALLBACK_THEME.tooltipFg),
+    cursor: cssVar("--chart-cursor", FALLBACK_THEME.cursor),
+    marker: cssVar("--chart-marker", FALLBACK_THEME.marker),
+  };
+}
+
+function useChartTheme() {
+  const [theme, setTheme] = useState<ChartTheme>(FALLBACK_THEME);
+
+  useEffect(() => {
+    const apply = () => setTheme(readChartTheme());
+    apply();
+    const mq = window.matchMedia("(prefers-color-scheme: dark)");
+    mq.addEventListener("change", apply);
+    const obs = new MutationObserver(apply);
+    obs.observe(document.documentElement, { attributes: true, attributeFilter: ["class"] });
+    return () => {
+      mq.removeEventListener("change", apply);
+      obs.disconnect();
+    };
+  }, []);
+
+  return theme;
+}
+
+function useTooltipStyle(theme: ChartTheme) {
+  return {
+    fontSize: 12,
+    borderRadius: 8,
+    border: `1px solid ${theme.tooltipBorder}`,
+    background: theme.tooltipBg,
+    color: theme.tooltipFg,
+    boxShadow: "0 4px 12px rgba(0,0,0,0.08)",
+  };
+}
+
+function toCsv(rows: Record<string, unknown>[]) {
+  if (!rows.length) return "";
+  const keys = Object.keys(rows[0]);
+  const escape = (v: unknown) => {
+    const s = v == null ? "" : String(v);
+    return /[",\n]/.test(s) ? `"${s.replace(/"/g, '""')}"` : s;
+  };
+  return [keys.join(","), ...rows.map((r) => keys.map((k) => escape(r[k])).join(","))].join("\n");
+}
+
+function downloadBlob(blob: Blob, filename: string) {
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement("a");
+  a.href = url;
+  a.download = filename;
+  a.click();
+  URL.revokeObjectURL(url);
+}
+
+function exportCsv(data: Record<string, unknown>[], filename: string) {
+  downloadBlob(new Blob([toCsv(data)], { type: "text/csv;charset=utf-8" }), `${filename}.csv`);
+}
+
+async function exportPng(container: HTMLElement | null, filename: string) {
+  const svg = container?.querySelector("svg");
+  if (!svg) return;
+
+  const clone = svg.cloneNode(true) as SVGSVGElement;
+  if (!clone.getAttribute("xmlns")) clone.setAttribute("xmlns", "http://www.w3.org/2000/svg");
+
+  const bbox = svg.getBoundingClientRect();
+  const width = Math.max(1, Math.round(bbox.width || Number(svg.getAttribute("width")) || 600));
+  const height = Math.max(1, Math.round(bbox.height || Number(svg.getAttribute("height")) || 240));
+  clone.setAttribute("width", String(width));
+  clone.setAttribute("height", String(height));
+
+  const svgStr = new XMLSerializer().serializeToString(clone);
+  const svgUrl = URL.createObjectURL(new Blob([svgStr], { type: "image/svg+xml;charset=utf-8" }));
+
+  try {
+    const img = await new Promise<HTMLImageElement>((resolve, reject) => {
+      const image = new Image();
+      image.onload = () => resolve(image);
+      image.onerror = reject;
+      image.src = svgUrl;
+    });
+    const canvas = document.createElement("canvas");
+    canvas.width = width * 2;
+    canvas.height = height * 2;
+    const ctx = canvas.getContext("2d");
+    if (!ctx) return;
+    ctx.fillStyle = getComputedStyle(document.documentElement).getPropertyValue("--card-bg").trim() || "#ffffff";
+    ctx.fillRect(0, 0, canvas.width, canvas.height);
+    ctx.scale(2, 2);
+    ctx.drawImage(img, 0, 0, width, height);
+    await new Promise<void>((resolve) => {
+      canvas.toBlob((blob) => {
+        if (blob) downloadBlob(blob, `${filename}.png`);
+        resolve();
+      }, "image/png");
+    });
+  } finally {
+    URL.revokeObjectURL(svgUrl);
+  }
+}
+
+/** Hover-revealed CSV/PNG export controls, matching Reports Center styling. */
+export function ChartShell({
+  data,
+  filename,
+  children,
+}: {
+  data: Record<string, unknown>[];
+  filename: string;
+  children: ReactNode;
+}) {
+  const ref = useRef<HTMLDivElement>(null);
+
+  return (
+    <div ref={ref} className="group/chart relative">
+      <div className="absolute right-1 top-0 z-10 flex gap-1 opacity-0 transition-opacity group-hover/chart:opacity-100 focus-within:opacity-100">
+        <button
+          type="button"
+          onClick={() => exportCsv(data, filename)}
+          className="flex items-center gap-1 rounded-lg border border-slate-200 bg-white px-2 py-1 text-[11px] font-medium text-slate-600 shadow-sm hover:bg-slate-50"
+        >
+          <Download size={11} /> CSV
+        </button>
+        <button
+          type="button"
+          onClick={() => exportPng(ref.current, filename)}
+          className="flex items-center gap-1 rounded-lg border border-slate-200 bg-white px-2 py-1 text-[11px] font-medium text-slate-600 shadow-sm hover:bg-slate-50"
+        >
+          <Download size={11} /> PNG
+        </button>
+      </div>
+      {children}
+    </div>
+  );
+}
+
+function MarkerDots({ markers, color }: { markers?: ChartMarker[]; color: string }) {
+  const router = useRouter();
+  if (!markers?.length) return null;
+
+  return (
+    <>
+      {markers.map((m) => (
+        <ReferenceDot
+          key={`${m.x}-${m.y}-${m.label ?? ""}`}
+          x={m.x}
+          y={m.y}
+          r={5}
+          fill={color}
+          stroke="#fff"
+          strokeWidth={2}
+          ifOverflow="extendDomain"
+          style={{ cursor: m.href ? "pointer" : "default" }}
+          onClick={m.href ? () => router.push(m.href!) : undefined}
+          label={
+            m.label
+              ? {
+                  value: m.label,
+                  position: "top",
+                  fontSize: 10,
+                  fill: color,
+                  offset: 8,
+                }
+              : false
+          }
+        />
+      ))}
+    </>
+  );
+}
+
 export function TrendAreaChart({
-  data, dataKey, xKey = "date", color = "#2563eb", height = 220,
-  compareKey, compareName = "Previous period",
+  data, dataKey, xKey = "date", color, height = 220,
+  compareKey, compareName = "Previous period", markers, filename,
+  tone = "primary",
 }: {
   data: Record<string, unknown>[];
   dataKey: string;
@@ -25,26 +252,34 @@ export function TrendAreaChart({
   height?: number;
   compareKey?: string;
   compareName?: string;
+  markers?: ChartMarker[];
+  filename?: string;
+  /** Theme palette slot when `color` is omitted. */
+  tone?: "primary" | "teal" | "amber" | "danger" | "purple" | "green";
 }) {
-  return (
+  const theme = useChartTheme();
+  const toneIndex = { primary: 0, teal: 1, amber: 2, danger: 3, purple: 4, green: 5 }[tone];
+  const stroke = resolveColorToken(color, theme.palette[toneIndex]);
+  const tooltipStyle = useTooltipStyle(theme);
+  const chart = (
     <ResponsiveContainer width="100%" height={height}>
-      <AreaChart data={data} margin={{ top: 5, right: 10, left: -10, bottom: 0 }}>
+      <AreaChart data={data} margin={{ top: markers?.length ? 18 : 5, right: 10, left: -10, bottom: 0 }}>
         <defs>
           <linearGradient id={`grad-${dataKey}`} x1="0" y1="0" x2="0" y2="1">
-            <stop offset="5%" stopColor={color} stopOpacity={0.25} />
-            <stop offset="95%" stopColor={color} stopOpacity={0} />
+            <stop offset="5%" stopColor={stroke} stopOpacity={0.25} />
+            <stop offset="95%" stopColor={stroke} stopOpacity={0} />
           </linearGradient>
         </defs>
-        <CartesianGrid strokeDasharray="3 3" stroke="#f1f5f9" vertical={false} />
-        <XAxis dataKey={xKey} tick={{ fontSize: 11, fill: "#94a3b8" }} axisLine={false} tickLine={false} minTickGap={30} />
-        <YAxis tick={{ fontSize: 11, fill: "#94a3b8" }} axisLine={false} tickLine={false} width={40} />
+        <CartesianGrid strokeDasharray="3 3" stroke={theme.grid} vertical={false} />
+        <XAxis dataKey={xKey} tick={{ fontSize: 11, fill: theme.tick }} axisLine={false} tickLine={false} minTickGap={30} />
+        <YAxis tick={{ fontSize: 11, fill: theme.tick }} axisLine={false} tickLine={false} width={40} />
         <Tooltip contentStyle={tooltipStyle} />
         {compareKey && (
           <Area
             type="monotone"
             dataKey={compareKey}
             name={compareName}
-            stroke={color}
+            stroke={stroke}
             strokeWidth={1.5}
             strokeOpacity={0.35}
             fill="transparent"
@@ -53,77 +288,165 @@ export function TrendAreaChart({
             connectNulls
           />
         )}
-        <Area type="monotone" dataKey={dataKey} stroke={color} strokeWidth={2} fill={`url(#grad-${dataKey})`} />
+        <Area type="monotone" dataKey={dataKey} stroke={stroke} strokeWidth={2} fill={`url(#grad-${dataKey})`} />
+        <MarkerDots markers={markers} color={theme.marker} />
       </AreaChart>
     </ResponsiveContainer>
   );
+
+  return filename ? <ChartShell data={data} filename={filename}>{chart}</ChartShell> : chart;
 }
 
-export function MultiLineChart({ data, lines, xKey = "date", height = 240 }: {
-  data: Record<string, unknown>[]; lines: { key: string; color: string; name?: string }[]; xKey?: string; height?: number;
+export function MultiLineChart({ data, lines, xKey = "date", height = 240, filename }: {
+  data: Record<string, unknown>[];
+  lines: { key: string; color?: string; name?: string }[];
+  xKey?: string;
+  height?: number;
+  filename?: string;
 }) {
-  return (
+  const theme = useChartTheme();
+  const tooltipStyle = useTooltipStyle(theme);
+  const chart = (
     <ResponsiveContainer width="100%" height={height}>
       <LineChart data={data} margin={{ top: 5, right: 10, left: -10, bottom: 0 }}>
-        <CartesianGrid strokeDasharray="3 3" stroke="#f1f5f9" vertical={false} />
-        <XAxis dataKey={xKey} tick={{ fontSize: 11, fill: "#94a3b8" }} axisLine={false} tickLine={false} minTickGap={30} />
-        <YAxis tick={{ fontSize: 11, fill: "#94a3b8" }} axisLine={false} tickLine={false} width={40} />
+        <CartesianGrid strokeDasharray="3 3" stroke={theme.grid} vertical={false} />
+        <XAxis dataKey={xKey} tick={{ fontSize: 11, fill: theme.tick }} axisLine={false} tickLine={false} minTickGap={30} />
+        <YAxis tick={{ fontSize: 11, fill: theme.tick }} axisLine={false} tickLine={false} width={40} />
         <Tooltip contentStyle={tooltipStyle} />
         <Legend wrapperStyle={{ fontSize: 12 }} />
-        {lines.map((l) => (
-          <Line key={l.key} type="monotone" dataKey={l.key} name={l.name ?? l.key} stroke={l.color} strokeWidth={2} dot={false} />
+        {lines.map((l, i) => (
+          <Line
+            key={l.key}
+            type="monotone"
+            dataKey={l.key}
+            name={l.name ?? l.key}
+            stroke={l.color ?? theme.palette[i % theme.palette.length]}
+            strokeWidth={2}
+            dot={false}
+          />
         ))}
       </LineChart>
     </ResponsiveContainer>
   );
+
+  return filename ? <ChartShell data={data} filename={filename}>{chart}</ChartShell> : chart;
 }
 
-export function BarHorizontal({ data, dataKey, nameKey, color = "#2563eb", height = 260 }: {
-  data: Record<string, unknown>[]; dataKey: string; nameKey: string; color?: string; height?: number;
+export function BarHorizontal({ data, dataKey, nameKey, color, height = 260, filename, tone = "primary" }: {
+  data: Record<string, unknown>[];
+  dataKey: string;
+  nameKey: string;
+  color?: string;
+  height?: number;
+  filename?: string;
+  tone?: "primary" | "teal" | "amber" | "danger" | "purple" | "green";
 }) {
-  return (
+  const theme = useChartTheme();
+  const toneIndex = { primary: 0, teal: 1, amber: 2, danger: 3, purple: 4, green: 5 }[tone];
+  const fill = color ?? theme.palette[toneIndex];
+  const tooltipStyle = useTooltipStyle(theme);
+  const chart = (
     <ResponsiveContainer width="100%" height={height}>
       <BarChart data={data} layout="vertical" margin={{ top: 5, right: 20, left: 0, bottom: 0 }}>
-        <CartesianGrid strokeDasharray="3 3" stroke="#f1f5f9" horizontal={false} />
-        <XAxis type="number" tick={{ fontSize: 11, fill: "#94a3b8" }} axisLine={false} tickLine={false} />
-        <YAxis type="category" dataKey={nameKey} tick={{ fontSize: 11, fill: "#475569" }} axisLine={false} tickLine={false} width={110} />
-        <Tooltip contentStyle={tooltipStyle} cursor={{ fill: "#f8fafc" }} />
-        <Bar dataKey={dataKey} fill={color} radius={[0, 4, 4, 0]} barSize={16} />
+        <CartesianGrid strokeDasharray="3 3" stroke={theme.grid} horizontal={false} />
+        <XAxis type="number" tick={{ fontSize: 11, fill: theme.tick }} axisLine={false} tickLine={false} />
+        <YAxis type="category" dataKey={nameKey} tick={{ fontSize: 11, fill: theme.axis }} axisLine={false} tickLine={false} width={110} />
+        <Tooltip contentStyle={tooltipStyle} cursor={{ fill: theme.cursor }} />
+        <Bar dataKey={dataKey} fill={fill} radius={[0, 4, 4, 0]} barSize={16} />
       </BarChart>
     </ResponsiveContainer>
   );
+
+  return filename ? <ChartShell data={data} filename={filename}>{chart}</ChartShell> : chart;
 }
 
-export function BarVertical({ data, dataKey, nameKey, color = "#2563eb", height = 260 }: {
-  data: Record<string, unknown>[]; dataKey: string; nameKey: string; color?: string; height?: number;
+export function BarVertical({ data, dataKey, nameKey, color, height = 260, filename }: {
+  data: Record<string, unknown>[]; dataKey: string; nameKey: string; color?: string; height?: number; filename?: string;
 }) {
-  return (
+  const theme = useChartTheme();
+  const fill = color ?? theme.palette[0];
+  const tooltipStyle = useTooltipStyle(theme);
+  const chart = (
     <ResponsiveContainer width="100%" height={height}>
       <BarChart data={data} margin={{ top: 5, right: 10, left: -10, bottom: 0 }}>
-        <CartesianGrid strokeDasharray="3 3" stroke="#f1f5f9" vertical={false} />
-        <XAxis dataKey={nameKey} tick={{ fontSize: 11, fill: "#94a3b8" }} axisLine={false} tickLine={false} />
-        <YAxis tick={{ fontSize: 11, fill: "#94a3b8" }} axisLine={false} tickLine={false} width={40} />
-        <Tooltip contentStyle={tooltipStyle} cursor={{ fill: "#f8fafc" }} />
-        <Bar dataKey={dataKey} fill={color} radius={[4, 4, 0, 0]} barSize={28} />
+        <CartesianGrid strokeDasharray="3 3" stroke={theme.grid} vertical={false} />
+        <XAxis dataKey={nameKey} tick={{ fontSize: 11, fill: theme.tick }} axisLine={false} tickLine={false} />
+        <YAxis tick={{ fontSize: 11, fill: theme.tick }} axisLine={false} tickLine={false} width={40} />
+        <Tooltip contentStyle={tooltipStyle} cursor={{ fill: theme.cursor }} />
+        <Bar dataKey={dataKey} fill={fill} radius={[4, 4, 0, 0]} barSize={28} />
       </BarChart>
     </ResponsiveContainer>
   );
+
+  return filename ? <ChartShell data={data} filename={filename}>{chart}</ChartShell> : chart;
 }
 
-export function DonutChart({ data, dataKey, nameKey, height = 240 }: {
-  data: Record<string, unknown>[]; dataKey: string; nameKey: string; height?: number;
+export function DonutChart({ data, dataKey, nameKey, height = 240, filename }: {
+  data: Record<string, unknown>[]; dataKey: string; nameKey: string; height?: number; filename?: string;
 }) {
-  return (
+  const theme = useChartTheme();
+  const tooltipStyle = useTooltipStyle(theme);
+  const resolveColor = (raw: unknown, i: number) => {
+    if (typeof raw !== "string" || !raw) return theme.palette[i % theme.palette.length];
+    if (raw.startsWith("var(")) {
+      const name = raw.slice(4, -1).trim();
+      return cssVar(name, theme.palette[i % theme.palette.length]);
+    }
+    return raw;
+  };
+  const chart = (
     <ResponsiveContainer width="100%" height={height}>
       <PieChart>
         <Pie data={data} dataKey={dataKey} nameKey={nameKey} innerRadius={55} outerRadius={85} paddingAngle={2}>
-          {data.map((_, i) => (
-            <Cell key={i} fill={COLORS[i % COLORS.length]} />
+          {data.map((row, i) => (
+            <Cell key={i} fill={resolveColor(row.color, i)} />
           ))}
         </Pie>
         <Tooltip contentStyle={tooltipStyle} />
         <Legend wrapperStyle={{ fontSize: 11 }} />
       </PieChart>
+    </ResponsiveContainer>
+  );
+
+  return filename ? <ChartShell data={data} filename={filename}>{chart}</ChartShell> : chart;
+}
+
+export function Sparkline({
+  data,
+  dataKey,
+  color,
+  height = 40,
+  id = "spark",
+}: {
+  data: Record<string, unknown>[];
+  dataKey: string;
+  color?: string;
+  height?: number;
+  id?: string;
+}) {
+  const theme = useChartTheme();
+  const stroke = resolveColorToken(color, theme.palette[0]);
+  if (!data.length) return <div style={{ height }} className="w-full" />;
+  const gradId = `grad-${id}`;
+  return (
+    <ResponsiveContainer width="100%" height={height}>
+      <AreaChart data={data} margin={{ top: 4, right: 0, left: 0, bottom: 0 }}>
+        <defs>
+          <linearGradient id={gradId} x1="0" y1="0" x2="0" y2="1">
+            <stop offset="5%" stopColor={stroke} stopOpacity={0.3} />
+            <stop offset="95%" stopColor={stroke} stopOpacity={0} />
+          </linearGradient>
+        </defs>
+        <Area
+          type="monotone"
+          dataKey={dataKey}
+          stroke={stroke}
+          strokeWidth={1.5}
+          fill={`url(#${gradId})`}
+          dot={false}
+          isAnimationActive={false}
+        />
+      </AreaChart>
     </ResponsiveContainer>
   );
 }

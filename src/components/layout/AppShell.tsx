@@ -56,7 +56,7 @@ export function AppShell({
       >
         <AppHeader alertCount={alertCount} />
         <main className="flex-1 p-6 max-w-[1600px] w-full mx-auto">{children}</main>
-        <footer className="px-6 py-4 text-center text-xs text-slate-400 border-t border-slate-200/80">
+        <footer className="px-6 py-4 text-center text-xs text-[var(--muted-fg)] border-t border-[var(--border-subtle)]">
           © {new Date().getFullYear()} ibTech. All rights reserved.
         </footer>
       </div>

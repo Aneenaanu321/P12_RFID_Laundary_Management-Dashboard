@@ -15,37 +15,37 @@ dashboard. Grouped by category, roughly ordered by impact within each group.
       shareable/bookmarkable.
 
 ## 2. KPI cards (`KpiCard.tsx`)
-- [ ] Add sparkline mini-charts inside each card (7-day micro trend) —
+- [x] Add sparkline mini-charts inside each card (7-day micro trend) —
       Recharts `ResponsiveContainer` at ~40px height.
-- [ ] Add target/goal indicators (e.g. "Missing Items" vs. an acceptable
+- [x] Add target/goal indicators (e.g. "Missing Items" vs. an acceptable
       threshold) with a progress ring or colored bar.
-- [ ] Make card grid user-reorderable / hideable (drag to reorder, persisted
+- [x] Make card grid user-reorderable / hideable (drag to reorder, persisted
       per-user — ties into role-based dashboard below).
-- [ ] Click-to-expand a card into a modal with a longer trend + breakdown by
+- [x] Click-to-expand a card into a modal with a longer trend + breakdown by
       customer/item-type.
-- [ ] Loading skeleton state for KPI cards (currently renders straight from
+- [x] Loading skeleton state for KPI cards (currently renders straight from
       server data with no suspense boundary/fallback).
 
 ## 3. Charts & visualization
-- [ ] Add a "Loss Value Trend" chart (currently only shown as a static KPI,
+- [x] Add a "Loss Value Trend" chart (currently only shown as a static KPI,
       no historical view) using `TrendAreaChart`.
-- [ ] Add a donut chart for item-status mix (With Customer / In Laundry /
+- [x] Add a donut chart for item-status mix (With Customer / In Laundry /
       Ready / Missing / EOL) — `DonutChart` component already exists but
       isn't used on the main dashboard.
-- [ ] Add a `BarHorizontal` "Top 5 customers by missing items" widget.
-- [ ] Annotate trend charts with event markers (e.g. spike in missing items
+- [x] Add a `BarHorizontal` "Top 5 customers by missing items" widget.
+- [x] Annotate trend charts with event markers (e.g. spike in missing items
       on a given day, linkable to `/loss/analytics`).
-- [ ] Add chart export (PNG/CSV) buttons on hover, matching the existing
+- [x] Add chart export (PNG/CSV) buttons on hover, matching the existing
       Reports export pattern (`exceljs`/`jspdf` already in the stack).
-- [ ] Dark-mode-aware chart colors (`Charts.tsx` colors are hardcoded hex,
+- [x] Dark-mode-aware chart colors (`Charts.tsx` colors are hardcoded hex,
       won't adapt if dark mode is added — see #5).
 
 ## 4. Process flow (`ProcessFlow.tsx`)
-- [ ] Show percentage of total alongside each stage count, not just raw
+- [x] Show percentage of total alongside each stage count, not just raw
       number.
-- [ ] Add a visual "flow width" (proportional bar/funnel) so bottleneck
+- [x] Add a visual "flow width" (proportional bar/funnel) so bottleneck
       stages are visually obvious, not just numeric.
-- [ ] Highlight stages with anomalous counts (e.g. items stuck > expected
+- [x] Highlight stages with anomalous counts (e.g. items stuck > expected
       time) in amber/red.
 
 ## 5. Visual polish / theming

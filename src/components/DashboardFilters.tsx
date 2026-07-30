@@ -52,7 +52,7 @@ export function DashboardFilters() {
     <div
       className={`flex flex-wrap items-center gap-2 mb-6 ${pending ? "opacity-70" : ""}`}
     >
-      <div className="inline-flex rounded-lg border border-slate-200 bg-white p-0.5">
+      <div className="inline-flex rounded-lg border border-[var(--border-subtle)] bg-[var(--card-bg)] p-0.5">
         {RANGE_OPTIONS.map((opt) => {
           const active = range === opt.value || (opt.value === "30" && !searchParams.get("range") && range === "30");
           return (
@@ -62,8 +62,8 @@ export function DashboardFilters() {
               onClick={() => setRange(opt.value)}
               className={`px-2.5 py-1.5 text-xs font-medium rounded-md transition-colors ${
                 active
-                  ? "bg-slate-900 text-white"
-                  : "text-slate-600 hover:bg-slate-50"
+                  ? "bg-[var(--foreground)] text-[var(--card-bg)]"
+                  : "text-[var(--muted)] hover:bg-[var(--surface-muted)]"
               }`}
             >
               {opt.label}
@@ -78,14 +78,14 @@ export function DashboardFilters() {
             type="date"
             value={from}
             onChange={(e) => push({ range: "custom", from: e.target.value, to: to || e.target.value })}
-            className="px-2 py-1.5 text-xs rounded-lg border border-slate-200 bg-white text-slate-700 focus:outline-none focus:ring-2 focus:ring-blue-100"
+            className="px-2 py-1.5 text-xs rounded-lg border border-[var(--border-subtle)] bg-[var(--card-bg)] text-[var(--foreground)] focus:outline-none focus:ring-2 focus:ring-[var(--status-blue-bg)]"
           />
-          <span className="text-xs text-slate-400">to</span>
+          <span className="text-xs text-[var(--muted-fg)]">to</span>
           <input
             type="date"
             value={to}
             onChange={(e) => push({ range: "custom", from: from || e.target.value, to: e.target.value })}
-            className="px-2 py-1.5 text-xs rounded-lg border border-slate-200 bg-white text-slate-700 focus:outline-none focus:ring-2 focus:ring-blue-100"
+            className="px-2 py-1.5 text-xs rounded-lg border border-[var(--border-subtle)] bg-[var(--card-bg)] text-[var(--foreground)] focus:outline-none focus:ring-2 focus:ring-[var(--status-blue-bg)]"
           />
         </div>
       )}
@@ -93,7 +93,7 @@ export function DashboardFilters() {
       <select
         value={type}
         onChange={(e) => push({ type: e.target.value || null })}
-        className="px-2.5 py-1.5 text-xs rounded-lg border border-slate-200 bg-white text-slate-600 focus:outline-none focus:ring-2 focus:ring-blue-100"
+        className="px-2.5 py-1.5 text-xs rounded-lg border border-[var(--border-subtle)] bg-[var(--card-bg)] text-[var(--muted)] focus:outline-none focus:ring-2 focus:ring-[var(--status-blue-bg)]"
       >
         <option value="">All customer types</option>
         {CUSTOMER_TYPES.map((t) => (
@@ -101,15 +101,25 @@ export function DashboardFilters() {
         ))}
       </select>
 
-      <label className="inline-flex items-center gap-2 px-2.5 py-1.5 text-xs text-slate-600 rounded-lg border border-slate-200 bg-white cursor-pointer select-none">
+      <label className="inline-flex items-center gap-2 px-2.5 py-1.5 text-xs text-[var(--muted)] rounded-lg border border-[var(--border-subtle)] bg-[var(--card-bg)] cursor-pointer select-none">
         <input
           type="checkbox"
           checked={compare}
           onChange={(e) => push({ compare: e.target.checked ? "1" : null })}
-          className="rounded border-slate-300 text-blue-600 focus:ring-blue-100"
+          className="rounded border-[var(--border-subtle)] text-[var(--status-blue)] focus:ring-[var(--status-blue-bg)]"
         />
         Compare to previous period
       </label>
+    </div>
+  );
+}
+
+export function FiltersSkeleton() {
+  return (
+    <div className="flex flex-wrap items-center gap-2 mb-6 animate-pulse">
+      <div className="h-9 w-44 rounded-lg bg-[var(--surface-muted)]" />
+      <div className="h-9 w-36 rounded-lg bg-[var(--surface-muted)]" />
+      <div className="h-9 w-48 rounded-lg bg-[var(--surface-muted)]" />
     </div>
   );
 }

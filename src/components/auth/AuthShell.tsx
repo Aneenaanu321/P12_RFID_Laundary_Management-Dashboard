@@ -79,11 +79,11 @@ export function AuthShell({
             </p>
           </div>
 
-          <h1 className="auth-display text-[1.75rem] font-bold tracking-tight text-[var(--auth-ink)]">
+          <h1 className="auth-display text-[1.75rem] font-bold tracking-tight text-[var(--auth-ink)] text-center">
             {title}
           </h1>
           {subtitle && (
-            <p className="mt-2 text-[15px] text-[var(--auth-muted)] leading-relaxed">{subtitle}</p>
+            <p className="mt-2 text-[15px] text-[var(--auth-muted)] leading-relaxed text-center">{subtitle}</p>
           )}
           <div className="mt-8">{children}</div>
         </div>
