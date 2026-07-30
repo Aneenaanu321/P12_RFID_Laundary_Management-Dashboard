@@ -1,0 +1,24 @@
+# Optional: PostgreSQL for a production deployment.
+# The prototype runs on Node's built-in SQLite by default (zero setup).
+# To move to Postgres:
+#   1. docker compose up -d
+#   2. Update prisma/schema.prisma datasource provider to "postgresql"
+#   3. Set DATABASE_URL below in .env
+#   4. npx prisma migrate dev --name init && npx prisma generate
+#   5. Port the query functions in src/lib/queries.ts from node:sqlite to @prisma/client
+version: "3.9"
+services:
+  postgres:
+    image: postgres:16-alpine
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: rfid
+      POSTGRES_PASSWORD: rfid
+      POSTGRES_DB: rfid_linen
+    ports:
+      - "5432:5432"
+    volumes:
+      - rfid_pg_data:/var/lib/postgresql/data
+
+volumes:
+  rfid_pg_data:

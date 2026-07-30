@@ -1,0 +1,222 @@
+// RFID Linen Management System — Prisma schema
+// NOTE: This prototype runs on SQLite so it works with zero external services.
+// The schema uses only types/features supported by PostgreSQL, MySQL and SQLite,
+// so switching datasource.provider to "postgresql" (see docker-compose.yml + .env.example)
+// and running `npx prisma migrate deploy` is a drop-in upgrade for production.
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+// ---------- Core organizational entities ----------
+
+model Customer {
+  id            String    @id @default(cuid())
+  name          String
+  code          String    @unique
+  type          String    // HOSPITAL | HOTEL | GYM | SPA
+  contactEmail  String?
+  contactPhone  String?
+  createdAt     DateTime  @default(now())
+
+  locations     Location[]
+  items         Item[]
+  settlements   Settlement[]
+  reconciliations Reconciliation[]
+
+  @@index([type])
+}
+
+model Location {
+  id           String   @id @default(cuid())
+  customerId   String
+  customer     Customer @relation(fields: [customerId], references: [id])
+  name         String
+  city         String?
+  createdAt    DateTime @default(now())
+
+  departments  Department[]
+  items        Item[]
+
+  @@index([customerId])
+}
+
+model Department {
+  id          String   @id @default(cuid())
+  locationId  String
+  location    Location @relation(fields: [locationId], references: [id])
+  name        String   // Emergency, Surgery, ICU, General Ward, Maternity, Other
+
+  items       Item[]
+
+  @@index([locationId])
+}
+
+// ---------- Item catalogue & lifecycle rules ----------
+
+model ItemType {
+  id                    String   @id @default(cuid())
+  name                  String   @unique // Gym Towel, Bath Towel, ...
+  category              String   // TOWEL | LINEN | GOWN | UNIFORM | OTHER
+  unitValue             Float    // AED, purchase value per item
+  pricePerCycle         Float    // AED charged per wash cycle at settlement
+  maxWashCycles         Int
+  monitorThresholdPct   Int      @default(60)
+  nearEolThresholdPct   Int      @default(80)
+
+  items                 Item[]
+  settlementLines       SettlementLine[]
+
+  @@index([category])
+}
+
+model RfidReader {
+  id            String   @id @default(cuid())
+  code          String   @unique // RDR-001
+  name          String
+  zone          String   // Receiving, Sorting, Washing Area, ...
+  status        String   @default("ONLINE") // ONLINE | WARNING | OFFLINE
+  firmware      String
+  readsToday    Int      @default(0)
+  readsPerMin   Int      @default(0)
+  lastCommAt    DateTime @default(now())
+
+  events        RfidEvent[]
+  itemsLastSeen Item[]
+
+  @@index([status])
+}
+
+// ---------- RFID-tagged items (the heart of the system) ----------
+
+model Item {
+  id              String    @id @default(cuid())
+  epc             String    @unique // RFID EPC, e.g. EPC-3034A8F1
+  itemCode        String    @unique // TWL-000124
+
+  itemTypeId      String
+  itemType        ItemType  @relation(fields: [itemTypeId], references: [id])
+
+  customerId      String
+  customer        Customer  @relation(fields: [customerId], references: [id])
+  locationId      String?
+  location        Location? @relation(fields: [locationId], references: [id])
+  departmentId    String?
+  department      Department? @relation(fields: [departmentId], references: [id])
+
+  currentZone     String    // WITH_CUSTOMER | RECEIVING | SORTING | WASHING | DRYING | FOLDING | QUALITY_CHECK | READY | DISPATCH | DISPOSED
+  currentStatus   String    // ACTIVE | IN_LAUNDRY | READY | MISSING | DAMAGED | DISPOSAL_REQUIRED | DISPOSED
+
+  washCycles      Int       @default(0)
+  lifecycleStatus String    @default("ACTIVE") // ACTIVE | MONITOR | NEAR_END_OF_LIFE | DISPOSAL_REQUIRED
+
+  purchaseDate    DateTime
+  value           Float
+
+  missing         Boolean   @default(false)
+  missingSince    DateTime?
+  damaged         Boolean   @default(false)
+  disposed        Boolean   @default(false)
+  disposedAt      DateTime?
+
+  lastReadAt      DateTime  @default(now())
+  lastReaderId    String?
+  lastReader      RfidReader? @relation(fields: [lastReaderId], references: [id])
+
+  events          RfidEvent[]
+
+  @@index([customerId])
+  @@index([itemTypeId])
+  @@index([currentStatus])
+  @@index([lifecycleStatus])
+  @@index([missing])
+  @@index([disposed])
+}
+
+model RfidEvent {
+  id          String   @id @default(cuid())
+  itemId      String
+  item        Item     @relation(fields: [itemId], references: [id])
+  readerId    String
+  reader      RfidReader @relation(fields: [readerId], references: [id])
+  zone        String
+  eventType   String   // RECEIVED | SORTED | WASHING | DRYING | FOLDING | READY | DISPATCHED | RETURNED | MISSING | DISPOSED
+  status      String   @default("Active")
+  timestamp   DateTime @default(now())
+
+  @@index([itemId])
+  @@index([readerId])
+  @@index([timestamp])
+  @@index([eventType])
+}
+
+// ---------- Accounting / settlement ----------
+
+model Settlement {
+  id           String   @id @default(cuid())
+  customerId   String
+  customer     Customer @relation(fields: [customerId], references: [id])
+  periodLabel  String   // e.g. "Jul 2026"
+  createdAt    DateTime @default(now())
+  status       String   @default("DRAFT") // DRAFT | FINALIZED
+
+  lines        SettlementLine[]
+}
+
+model SettlementLine {
+  id            String     @id @default(cuid())
+  settlementId  String
+  settlement    Settlement @relation(fields: [settlementId], references: [id])
+  itemTypeId    String
+  itemType      ItemType   @relation(fields: [itemTypeId], references: [id])
+  sent          Int
+  returned      Int
+  missing       Int
+  washCycles    Int
+  pricePerCycle Float
+  amount        Float
+}
+
+model Reconciliation {
+  id              String   @id @default(cuid())
+  customerId      String
+  customer        Customer @relation(fields: [customerId], references: [id])
+  batchDate       DateTime @default(now())
+  expected        Int
+  received        Int
+  missingCount    Int
+  expectedValue   Float
+  missingValue    Float
+}
+
+// ---------- Users / RBAC ----------
+
+model User {
+  id           String   @id @default(cuid())
+  name         String
+  email        String   @unique
+  passwordHash String
+  role         String   // SUPER_ADMIN | LAUNDRY_MANAGER | CUSTOMER_MANAGER | OPERATIONS_MANAGER | OPERATOR | FINANCE_USER | VIEWER
+  createdAt    DateTime @default(now())
+}
+
+// ---------- Alerts ----------
+
+model Alert {
+  id          String   @id @default(cuid())
+  severity    String   // CRITICAL | WARNING | INFO | SUCCESS
+  message     String
+  category    String   // WASH_LIMIT | MISSING | READER | RECONCILIATION | BATCH
+  relatedType String?
+  relatedId   String?
+  createdAt   DateTime @default(now())
+  resolved    Boolean  @default(false)
+
+  @@index([severity])
+  @@index([resolved])
+}
