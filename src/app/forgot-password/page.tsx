@@ -2,7 +2,13 @@
 
 import { useActionState } from "react";
 import Link from "next/link";
-import { AuthShell, authButtonClass, authInputClass } from "@/components/auth/AuthShell";
+import {
+  AuthShell,
+  authButtonClass,
+  authInputClass,
+  authLabelClass,
+  authLinkClass,
+} from "@/components/auth/AuthShell";
 import { forgotPasswordAction } from "./actions";
 
 export default function ForgotPasswordPage() {
@@ -14,42 +20,39 @@ export default function ForgotPasswordPage() {
       subtitle="Enter your email and we’ll prepare a password reset link."
     >
       {state?.success ? (
-        <div className="space-y-3">
-          <p className="text-sm text-green-700 bg-green-50 border border-green-100 rounded-lg px-3 py-2">
+        <div className="space-y-4">
+          <p className="text-sm text-[var(--auth-green-deep)] bg-[var(--auth-green-soft)] border border-[var(--auth-green)]/20 rounded-lg px-3.5 py-2.5">
             {state.success}
           </p>
           {state.resetLink && (
-            <div className="rounded-lg border border-slate-200 bg-slate-50 p-3 space-y-2">
-              <p className="text-[11px] font-medium text-slate-400 uppercase tracking-wider">
+            <div className="rounded-lg border border-[var(--auth-border)] bg-white/70 p-3.5 space-y-2">
+              <p className="text-[11px] font-semibold tracking-[0.14em] uppercase text-[var(--auth-muted)]">
                 Demo reset link
               </p>
-              <Link
-                href={state.resetLink}
-                className="block text-sm text-blue-600 font-medium break-all hover:underline"
-              >
+              <Link href={state.resetLink} className={`block text-sm break-all ${authLinkClass}`}>
                 {state.resetLink}
               </Link>
             </div>
           )}
-          <Link href="/login" className="block text-center text-xs text-blue-600 font-medium hover:underline">
+          <Link href="/login" className={`inline-block text-sm ${authLinkClass}`}>
             Back to sign in
           </Link>
         </div>
       ) : (
         <>
-          <form action={formAction} className="space-y-3">
+          <form action={formAction} className="space-y-4">
             <div>
-              <label className="text-xs font-medium text-slate-600">Email</label>
+              <label className={authLabelClass}>Email</label>
               <input name="email" type="email" required autoComplete="email" className={authInputClass} />
             </div>
-            {state?.error && <p className="text-xs text-red-600">{state.error}</p>}
+            {state?.error && <p className="text-sm text-red-600">{state.error}</p>}
             <button type="submit" disabled={pending} className={authButtonClass}>
               {pending ? "Sending..." : "Send reset link"}
             </button>
           </form>
-          <p className="mt-5 text-center text-xs text-slate-500">
+          <p className="mt-6 text-[14px] text-[var(--auth-muted)]">
             Remembered your password?{" "}
-            <Link href="/login" className="text-blue-600 font-medium hover:underline">
+            <Link href="/login" className={authLinkClass}>
               Sign in
             </Link>
           </p>

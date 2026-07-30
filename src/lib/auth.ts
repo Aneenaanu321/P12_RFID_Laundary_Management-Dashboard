@@ -14,8 +14,8 @@ export type SessionUser = {
   role: string;
 };
 
-export function signSession(user: SessionUser): string {
-  return jwt.sign(user, SECRET, { expiresIn: "7d" });
+export function signSession(user: SessionUser, expiresIn: string | number = "7d"): string {
+  return jwt.sign(user, SECRET, { expiresIn } as jwt.SignOptions);
 }
 
 export function verifySession(token: string): SessionUser | null {

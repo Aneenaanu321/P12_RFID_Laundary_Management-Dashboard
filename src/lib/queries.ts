@@ -49,25 +49,71 @@ const ITEM_SELECT = `
 // ---------------------------------------------------------------------------
 // Dashboard KPIs
 // ---------------------------------------------------------------------------
-export function getKpis() {
-  const today = get<Record<string, number>>(
-    `SELECT * FROM DailySnapshot ORDER BY date DESC LIMIT 1`
-  );
-  const weekAgo = get<Record<string, number>>(
-    `SELECT * FROM DailySnapshot ORDER BY date DESC LIMIT 1 OFFSET 7`
-  );
+export function getKpis(customerType?: string) {
+  const today = customerType
+    ? getLiveKpiRow(customerType)
+    : get<Record<string, number>>(`SELECT * FROM DailySnapshot ORDER BY date DESC LIMIT 1`);
+
+  const weekAgo = customerType
+    ? null
+    : get<Record<string, number>>(`SELECT * FROM DailySnapshot ORDER BY date DESC LIMIT 1 OFFSET 7`);
+
   const delta = (key: string) => {
-    if (!today || !weekAgo || !weekAgo[key]) return 0;
-    return ((today[key] - weekAgo[key]) / weekAgo[key]) * 100;
+    if (!today || !weekAgo || !weekAgo[key]) return undefined;
+    return ((Number(today[key]) - Number(weekAgo[key])) / Number(weekAgo[key])) * 100;
   };
   return { today, weekAgo, delta };
 }
 
-export function getSnapshotSeries(days = 30) {
+function getLiveKpiRow(customerType?: string) {
+  const where = customerType ? "WHERE c.type = ?" : "";
+  const params = customerType ? [customerType] : [];
+  return get<Record<string, number>>(
+    `SELECT
+      COUNT(*) as totalItems,
+      COALESCE(SUM(CASE WHEN i.currentStatus='ACTIVE' THEN 1 ELSE 0 END), 0) as withCustomers,
+      COALESCE(SUM(CASE WHEN i.currentStatus='IN_LAUNDRY' THEN 1 ELSE 0 END), 0) as inLaundry,
+      COALESCE(SUM(CASE WHEN i.currentStatus='READY' THEN 1 ELSE 0 END), 0) as ready,
+      COALESCE(SUM(CASE WHEN i.missing=1 THEN 1 ELSE 0 END), 0) as missing,
+      COALESCE(SUM(CASE WHEN i.lifecycleStatus='NEAR_END_OF_LIFE' THEN 1 ELSE 0 END), 0) as nearEol,
+      COALESCE(SUM(CASE WHEN i.lifecycleStatus='DISPOSAL_REQUIRED' AND i.disposed=0 THEN 1 ELSE 0 END), 0) as disposalRequired,
+      COALESCE(SUM(CASE WHEN i.missing=1 THEN i.value ELSE 0 END), 0) as lossValue
+     FROM Item i
+     JOIN Customer c ON c.id = i.customerId
+     ${where}`,
+    params
+  );
+}
+
+export type SnapshotSeriesOpts = { days?: number; from?: string; to?: string };
+
+export function getSnapshotSeries(daysOrOpts: number | SnapshotSeriesOpts = 30) {
+  if (typeof daysOrOpts === "number") {
+    return all<Record<string, number | string>>(
+      `SELECT * FROM DailySnapshot ORDER BY date DESC LIMIT ?`,
+      [daysOrOpts]
+    ).reverse();
+  }
+
+  const { days, from, to } = daysOrOpts;
+  if (from && to) {
+    return all<Record<string, number | string>>(
+      `SELECT * FROM DailySnapshot WHERE date >= ? AND date <= ? ORDER BY date ASC`,
+      [from, to]
+    );
+  }
+
   return all<Record<string, number | string>>(
     `SELECT * FROM DailySnapshot ORDER BY date DESC LIMIT ?`,
-    [days]
+    [days ?? 30]
   ).reverse();
+}
+
+/** Shift a YYYY-MM-DD by `deltaDays` (negative = earlier). */
+export function shiftDate(isoDate: string, deltaDays: number) {
+  const d = new Date(`${isoDate}T12:00:00Z`);
+  d.setUTCDate(d.getUTCDate() + deltaDays);
+  return d.toISOString().slice(0, 10);
 }
 
 // ---------------------------------------------------------------------------

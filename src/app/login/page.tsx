@@ -4,12 +4,14 @@ import { useActionState } from "react";
 import Link from "next/link";
 import { useSearchParams } from "next/navigation";
 import { Suspense } from "react";
-import { AuthShell, authButtonClass, authInputClass } from "@/components/auth/AuthShell";
+import {
+  AuthShell,
+  authButtonClass,
+  authInputClass,
+  authLabelClass,
+  authLinkClass,
+} from "@/components/auth/AuthShell";
 import { loginAction } from "./actions";
-
-const DEMO_USERS = [
-  { role: "Super Admin", email: "aneena.antony@ibtechintl.com" },
-];
 
 function LoginForm() {
   const searchParams = useSearchParams();
@@ -18,17 +20,17 @@ function LoginForm() {
   const [state, formAction, pending] = useActionState(loginAction, undefined);
 
   return (
-    <AuthShell title="Sign in" subtitle="Track. Wash. Control. Optimize.">
+    <AuthShell title="Sign in" subtitle="Access your laundry operations dashboard.">
       {resetOk && (
-        <p className="mb-3 text-sm text-green-700 bg-green-50 border border-green-100 rounded-lg px-3 py-2">
+        <p className="mb-5 text-sm text-[var(--auth-green-deep)] bg-[var(--auth-green-soft)] border border-[var(--auth-green)]/20 rounded-lg px-3.5 py-2.5">
           Password updated. You can sign in with your new password.
         </p>
       )}
 
-      <form action={formAction} className="space-y-3">
+      <form action={formAction} className="space-y-4">
         <input type="hidden" name="from" value={from} />
         <div>
-          <label className="text-xs font-medium text-slate-600">Email</label>
+          <label className={authLabelClass}>Email</label>
           <input
             name="email"
             type="email"
@@ -39,9 +41,9 @@ function LoginForm() {
           />
         </div>
         <div>
-          <div className="flex items-center justify-between">
-            <label className="text-xs font-medium text-slate-600">Password</label>
-            <Link href="/forgot-password" className="text-[11px] text-blue-600 hover:underline">
+          <div className="flex items-center justify-between mb-1.5">
+            <label className="text-[13px] font-medium text-[var(--auth-ink)]">Password</label>
+            <Link href="/forgot-password" className={`text-[12px] ${authLinkClass}`}>
               Forgot password?
             </Link>
           </div>
@@ -53,41 +55,39 @@ function LoginForm() {
             className={authInputClass}
           />
         </div>
-        {state?.error && <p className="text-xs text-red-600">{state.error}</p>}
-        <button type="submit" disabled={pending} className={authButtonClass}>
+        <label className="flex items-center gap-2.5 cursor-pointer select-none">
+          <input
+            name="remember"
+            type="checkbox"
+            className="h-4 w-4 rounded border-[var(--auth-border)] text-[var(--auth-green)] accent-[var(--auth-green)] focus:ring-[var(--auth-green-soft)]"
+          />
+          <span className="text-[13px] text-[var(--auth-ink)]">Remember me for 30 days</span>
+        </label>
+        {state?.error && <p className="text-sm text-red-600">{state.error}</p>}
+        <button type="submit" disabled={pending} className={`${authButtonClass} mt-1`}>
           {pending ? "Signing in..." : "Sign in"}
         </button>
       </form>
 
-      <p className="mt-5 text-center text-xs text-slate-500">
+      <p className="mt-6 text-[14px] text-[var(--auth-muted)]">
         Don&apos;t have an account?{" "}
-        <Link href="/signup" className="text-blue-600 font-medium hover:underline">
+        <Link href="/signup" className={authLinkClass}>
           Create account
         </Link>
       </p>
-
-      <div className="mt-5 pt-4 border-t border-slate-100">
-        <p className="text-[11px] font-medium text-slate-400 uppercase tracking-wider mb-2">Demo account</p>
-        <div className="space-y-1">
-          {DEMO_USERS.map((u) => (
-            <p key={u.email} className="text-xs text-slate-500 flex justify-between gap-2">
-              <span>{u.role}</span>
-              <span className="text-slate-400 truncate">{u.email}</span>
-            </p>
-          ))}
-        </div>
-      </div>
     </AuthShell>
   );
 }
 
 export default function LoginPage() {
   return (
-    <Suspense fallback={
-      <AuthShell title="Sign in" subtitle="Track. Wash. Control. Optimize.">
-        <p className="text-sm text-slate-500">Loading...</p>
-      </AuthShell>
-    }>
+    <Suspense
+      fallback={
+        <AuthShell title="Sign in" subtitle="Access your laundry operations dashboard.">
+          <p className="text-sm text-[var(--auth-muted)]">Loading...</p>
+        </AuthShell>
+      }
+    >
       <LoginForm />
     </Suspense>
   );

@@ -14,8 +14,17 @@ const tooltipStyle = {
   boxShadow: "0 4px 12px rgba(0,0,0,0.08)",
 };
 
-export function TrendAreaChart({ data, dataKey, xKey = "date", color = "#2563eb", height = 220 }: {
-  data: Record<string, unknown>[]; dataKey: string; xKey?: string; color?: string; height?: number;
+export function TrendAreaChart({
+  data, dataKey, xKey = "date", color = "#2563eb", height = 220,
+  compareKey, compareName = "Previous period",
+}: {
+  data: Record<string, unknown>[];
+  dataKey: string;
+  xKey?: string;
+  color?: string;
+  height?: number;
+  compareKey?: string;
+  compareName?: string;
 }) {
   return (
     <ResponsiveContainer width="100%" height={height}>
@@ -30,6 +39,20 @@ export function TrendAreaChart({ data, dataKey, xKey = "date", color = "#2563eb"
         <XAxis dataKey={xKey} tick={{ fontSize: 11, fill: "#94a3b8" }} axisLine={false} tickLine={false} minTickGap={30} />
         <YAxis tick={{ fontSize: 11, fill: "#94a3b8" }} axisLine={false} tickLine={false} width={40} />
         <Tooltip contentStyle={tooltipStyle} />
+        {compareKey && (
+          <Area
+            type="monotone"
+            dataKey={compareKey}
+            name={compareName}
+            stroke={color}
+            strokeWidth={1.5}
+            strokeOpacity={0.35}
+            fill="transparent"
+            strokeDasharray="4 4"
+            dot={false}
+            connectNulls
+          />
+        )}
         <Area type="monotone" dataKey={dataKey} stroke={color} strokeWidth={2} fill={`url(#grad-${dataKey})`} />
       </AreaChart>
     </ResponsiveContainer>

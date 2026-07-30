@@ -5,13 +5,13 @@ components from "functional prototype" to a polished, high-rating product
 dashboard. Grouped by category, roughly ordered by impact within each group.
 
 ## 1. Filtering & date range control
-- [ ] Global date range picker (7d / 30d / 90d / custom) that drives both
+- [x] Global date range picker (7d / 30d / 90d / custom) that drives both
       trend charts instead of the hardcoded `getSnapshotSeries(30)`.
-- [ ] Customer-type filter (Hospital / Hotel / Gym / Spa) that scopes the KPI
+- [x] Customer-type filter (Hospital / Hotel / Gym / Spa) that scopes the KPI
       cards and customer table to a segment.
-- [ ] "Compare to previous period" toggle on trend charts (show prior-30-days
+- [x] "Compare to previous period" toggle on trend charts (show prior-30-days
       as a faint second line).
-- [ ] Persist selected filters in the URL query string so dashboard views are
+- [x] Persist selected filters in the URL query string so dashboard views are
       shareable/bookmarkable.
 
 ## 2. KPI cards (`KpiCard.tsx`)
