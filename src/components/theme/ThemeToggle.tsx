@@ -1,18 +1,12 @@
 "use client";
 
-import { Monitor, Moon, Sun } from "lucide-react";
+import { Moon, Sun } from "lucide-react";
 import { Button } from "@/components/ui/Button";
-import { useTheme, type ThemePreference } from "./ThemeProvider";
-
-const LABELS: Record<ThemePreference, string> = {
-  light: "Light",
-  dark: "Dark",
-  system: "System",
-};
+import { useTheme } from "./ThemeProvider";
 
 export function ThemeToggle() {
   const { preference, cycle } = useTheme();
-  const Icon = preference === "dark" ? Moon : preference === "light" ? Sun : Monitor;
+  const isDark = preference === "dark";
 
   return (
     <Button
@@ -20,10 +14,10 @@ export function ThemeToggle() {
       variant="secondary"
       size="icon"
       onClick={cycle}
-      title={`Theme: ${LABELS[preference]} (click to cycle)`}
-      aria-label={`Theme ${LABELS[preference]}. Click to cycle light, dark, system.`}
+      title={isDark ? "Switch to light theme" : "Switch to dark theme"}
+      aria-label={isDark ? "Dark theme. Click for light." : "Light theme. Click for dark."}
     >
-      <Icon size={16} aria-hidden />
+      {isDark ? <Moon size={16} aria-hidden /> : <Sun size={16} aria-hidden />}
     </Button>
   );
 }

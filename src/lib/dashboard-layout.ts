@@ -5,8 +5,7 @@ import type { KpiMetricKey } from "@/lib/kpi";
 export type DashboardSectionId =
   | "settlement"
   | "processFlow"
-  | "readerHealth"
-  | "alerts"
+  | "systemHealth"
   | "kpis"
   | "charts"
   | "pinned"
@@ -16,8 +15,7 @@ export type DashboardSectionId =
 const ALL_SECTIONS: DashboardSectionId[] = [
   "settlement",
   "processFlow",
-  "readerHealth",
-  "alerts",
+  "systemHealth",
   "kpis",
   "charts",
   "pinned",
@@ -33,26 +31,23 @@ const FINANCE_SECTIONS: DashboardSectionId[] = [
   "pinned",
   "recent",
   "customers",
-  "alerts",
-  "readerHealth",
+  "systemHealth",
 ];
 
 /** Operators: laundry process flow first. */
 const OPERATOR_SECTIONS: DashboardSectionId[] = [
   "processFlow",
   "kpis",
-  "readerHealth",
-  "alerts",
+  "systemHealth",
   "charts",
   "pinned",
   "recent",
 ];
 
-/** Admins: system health (readers + alerts) first. */
+/** Admins: KPI overview first, then system health. */
 const ADMIN_SECTIONS: DashboardSectionId[] = [
-  "readerHealth",
-  "alerts",
   "kpis",
+  "systemHealth",
   "processFlow",
   "charts",
   "pinned",
@@ -62,8 +57,7 @@ const ADMIN_SECTIONS: DashboardSectionId[] = [
 
 const DEFAULT_SECTIONS: DashboardSectionId[] = [
   "kpis",
-  "alerts",
-  "readerHealth",
+  "systemHealth",
   "processFlow",
   "charts",
   "pinned",
@@ -158,7 +152,7 @@ export function getDashboardVariantLabel(role: string): string {
     case "LAUNDRY_MANAGER":
       return `${label} view — process flow first`;
     case "SUPER_ADMIN":
-      return `${label} view — system health first`;
+      return `${label} view — KPIs first`;
     default:
       return `${label} overview`;
   }

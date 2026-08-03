@@ -10,58 +10,54 @@ import {
   type ReactNode,
 } from "react";
 
-export type ThemePreference = "light" | "dark" | "system";
+export type ThemePreference = "light" | "dark";
 
 const STORAGE_KEY = "rfid-theme";
 
 type ThemeContextValue = {
   preference: ThemePreference;
-  resolved: "light" | "dark";
+  resolved: ThemePreference;
   setPreference: (value: ThemePreference) => void;
   cycle: () => void;
 };
 
 const ThemeContext = createContext<ThemeContextValue | null>(null);
 
-function resolvePreference(preference: ThemePreference): "light" | "dark" {
-  if (preference === "light" || preference === "dark") return preference;
-  if (typeof window === "undefined") return "light";
-  return window.matchMedia("(prefers-color-scheme: dark)").matches ? "dark" : "light";
+export function applyThemeClass(preference: ThemePreference) {
+  const root = document.documentElement;
+  root.classList.toggle("dark", preference === "dark");
+  root.classList.toggle("light", preference === "light");
+  root.style.colorScheme = preference;
+  return preference;
 }
 
-export function applyThemeClass(preference: ThemePreference) {
-  const resolved = resolvePreference(preference);
-  const root = document.documentElement;
-  root.classList.toggle("dark", resolved === "dark");
-  root.classList.toggle("light", resolved === "light");
-  root.style.colorScheme = resolved;
-  return resolved;
+function readStoredTheme(): ThemePreference {
+  try {
+    const raw = localStorage.getItem(STORAGE_KEY);
+    if (raw === "dark") return "dark";
+    if (raw === "light") return "light";
+    // Migrate legacy "system" (or anything else) to an explicit light/dark choice.
+    if (raw === "system") {
+      return window.matchMedia("(prefers-color-scheme: dark)").matches ? "dark" : "light";
+    }
+  } catch {
+    /* ignore */
+  }
+  return "light";
 }
 
 export function ThemeProvider({ children }: { children: ReactNode }) {
-  const [preference, setPreferenceState] = useState<ThemePreference>("system");
-  const [resolved, setResolved] = useState<"light" | "dark">("light");
+  const [preference, setPreferenceState] = useState<ThemePreference>("light");
 
   useEffect(() => {
-    let stored: ThemePreference = "system";
+    const stored = readStoredTheme();
+    setPreferenceState(stored);
+    applyThemeClass(stored);
     try {
-      const raw = localStorage.getItem(STORAGE_KEY);
-      if (raw === "light" || raw === "dark" || raw === "system") stored = raw;
+      localStorage.setItem(STORAGE_KEY, stored);
     } catch {
       /* ignore */
     }
-    setPreferenceState(stored);
-    setResolved(applyThemeClass(stored));
-
-    const mq = window.matchMedia("(prefers-color-scheme: dark)");
-    const onChange = () => {
-      setPreferenceState((current) => {
-        if (current === "system") setResolved(applyThemeClass("system"));
-        return current;
-      });
-    };
-    mq.addEventListener("change", onChange);
-    return () => mq.removeEventListener("change", onChange);
   }, []);
 
   const setPreference = useCallback((value: ThemePreference) => {
@@ -71,26 +67,25 @@ export function ThemeProvider({ children }: { children: ReactNode }) {
     } catch {
       /* ignore */
     }
-    setResolved(applyThemeClass(value));
+    applyThemeClass(value);
   }, []);
 
   const cycle = useCallback(() => {
     setPreferenceState((current) => {
-      const next: ThemePreference =
-        current === "system" ? "light" : current === "light" ? "dark" : "system";
+      const next: ThemePreference = current === "light" ? "dark" : "light";
       try {
         localStorage.setItem(STORAGE_KEY, next);
       } catch {
         /* ignore */
       }
-      setResolved(applyThemeClass(next));
+      applyThemeClass(next);
       return next;
     });
   }, []);
 
   const value = useMemo(
-    () => ({ preference, resolved, setPreference, cycle }),
-    [preference, resolved, setPreference, cycle]
+    () => ({ preference, resolved: preference, setPreference, cycle }),
+    [preference, setPreference, cycle]
   );
 
   return <ThemeContext.Provider value={value}>{children}</ThemeContext.Provider>;

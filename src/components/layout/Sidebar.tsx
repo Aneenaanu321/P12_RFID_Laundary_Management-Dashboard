@@ -61,7 +61,7 @@ const NAV_ICONS: Record<string, LucideIcon> = {
   "/admin/settings": Settings,
 };
 
-const COLLAPSED_SECTIONS_KEY = "sidebar-collapsed-sections";
+const COLLAPSED_SECTIONS_KEY = "sidebar-collapsed-sections-v2";
 
 function loadCollapsedSections(): Record<string, boolean> {
   try {
@@ -104,7 +104,23 @@ export function Sidebar({
   }, [pathname]);
 
   useEffect(() => {
-    setCollapsedSections(loadCollapsedSections());
+    const stored = loadCollapsedSections();
+    // First visit: collapse every section except the active one so the rail fits without scrolling.
+    if (Object.keys(stored).length === 0) {
+      const defaults: Record<string, boolean> = {};
+      for (let si = 0; si < NAV.length; si++) {
+        const section = NAV[si];
+        const key = section.heading ?? `section-${si}`;
+        if (!section.heading) continue;
+        defaults[key] = key !== activeSectionKey;
+      }
+      setCollapsedSections(defaults);
+      localStorage.setItem(COLLAPSED_SECTIONS_KEY, JSON.stringify(defaults));
+      return;
+    }
+    setCollapsedSections(stored);
+    // activeSectionKey intentionally omitted — only seed defaults once on mount
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   useEffect(() => {
@@ -116,10 +132,6 @@ export function Sidebar({
       return next;
     });
   }, [activeSectionKey]);
-
-  useEffect(() => {
-    activeRef.current?.scrollIntoView({ block: "nearest", behavior: "smooth" });
-  }, [pathname, open]);
 
   function handleNavigate() {
     if (typeof window !== "undefined" && window.matchMedia("(max-width: 1023px)").matches && open) {
@@ -140,11 +152,9 @@ export function Sidebar({
 
   return (
     <aside
-      className={`flex h-screen flex-col bg-[var(--navy-950)] text-slate-300
+      className={`fixed inset-y-0 left-0 z-50 flex flex-col bg-[var(--navy-950)] text-slate-300
         transition-[width] duration-300 ease-in-out overflow-hidden
-        ${widthClass}
-        max-lg:fixed max-lg:inset-y-0 max-lg:left-0 max-lg:z-50
-        lg:sticky lg:top-0 lg:shrink-0`}
+        ${widthClass}`}
     >
       <div
         className={`flex items-center h-16 border-b border-white/10 shrink-0 ${
@@ -176,7 +186,7 @@ export function Sidebar({
         </Button>
       </div>
 
-      <nav ref={navRef} className={`flex-1 overflow-y-auto overflow-x-hidden py-3 ${showLabels ? "px-3" : "px-1.5"}`}>
+      <nav ref={navRef} className={`flex-1 overflow-hidden py-3 ${showLabels ? "px-3" : "px-1.5"}`}>
         {NAV.map((section, si) => {
           const visibleItems = section.items.filter((it) => hasPermission(role, it.permission));
           if (visibleItems.length === 0) return null;

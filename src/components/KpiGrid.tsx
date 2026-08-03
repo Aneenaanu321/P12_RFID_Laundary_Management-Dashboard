@@ -209,7 +209,7 @@ export function KpiGrid({
         </div>
       )}
 
-      <div className="grid grid-cols-1 min-[380px]:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-3 sm:gap-4">
+      <div className="grid grid-cols-1 min-[380px]:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-2.5 sm:gap-3">
         {visible.map((id, index) => {
           const kpi = byId.get(id)!;
           const isLive = Boolean(liveKpis && (id === "inLaundry" || id === "ready"));

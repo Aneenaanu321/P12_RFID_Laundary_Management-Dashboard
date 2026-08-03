@@ -45,8 +45,7 @@ function SectionFallback({ height = 160 }: { height?: number }) {
 const SECTION_TITLES: Record<DashboardSectionId, string> = {
   settlement: "Settlement summary",
   processFlow: "Process flow",
-  readerHealth: "Reader health",
-  alerts: "Live alerts",
+  systemHealth: "System health",
   kpis: "KPI cards",
   charts: "Trend charts",
   pinned: "Pinned customers",
@@ -59,6 +58,21 @@ function wrapSection(id: DashboardSectionId, content: ReactNode) {
     <SectionErrorBoundary key={id} title={SECTION_TITLES[id]}>
       {content}
     </SectionErrorBoundary>
+  );
+}
+
+function SystemHealthRow() {
+  return (
+    <div className="grid grid-cols-1 lg:grid-cols-5 gap-4 mb-6">
+      <div className="lg:col-span-2">
+        <Suspense fallback={<SectionFallback height={200} />}>
+          <ReaderHealthWidget compact />
+        </Suspense>
+      </div>
+      <div className="lg:col-span-3">
+        <LiveAlertsWidget compact />
+      </div>
+    </div>
   );
 }
 
@@ -86,15 +100,8 @@ function renderSection(
           <DashboardProcessFlow />
         </Suspense>
       );
-    case "readerHealth":
-      return wrapSection(
-        id,
-        <Suspense fallback={<SectionFallback height={72} />}>
-          <ReaderHealthWidget />
-        </Suspense>
-      );
-    case "alerts":
-      return wrapSection(id, <LiveAlertsWidget />);
+    case "systemHealth":
+      return wrapSection(id, <SystemHealthRow />);
     case "kpis":
       return wrapSection(
         id,

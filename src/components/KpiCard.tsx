@@ -109,18 +109,18 @@ export function KpiCard({
     .filter(Boolean)
     .join(". ");
 
-  const className = `group relative block bg-[var(--card-bg)] rounded-xl border border-[var(--border-subtle)] shadow-sm p-3 sm:p-4 h-full hover:border-[var(--accent-500)] hover:shadow-md transition-all text-left w-full dash-enter interactive-card ${
+  const className = `group relative block bg-[var(--card-bg)] rounded-lg border border-[var(--border-subtle)] shadow-sm p-2.5 sm:p-3 h-full hover:border-[var(--accent-500)] hover:shadow-md transition-all text-left w-full dash-enter interactive-card ${
     clickable ? "cursor-pointer a11y-focus" : ""
   }`;
 
   const body = (
     <>
-      <div className="flex items-start justify-between gap-2">
-        <div className="flex items-center gap-2 min-w-0">
+      <div className="flex items-start justify-between gap-1.5">
+        <div className="flex items-center gap-1.5 min-w-0">
           {dragHandleProps && (
             <button
               type="button"
-              className="text-[var(--muted-fg)] hover:text-[var(--muted)] -ml-1 p-0.5 cursor-grab active:cursor-grabbing a11y-focus rounded"
+              className="text-[var(--muted-fg)] hover:text-[var(--muted)] -ml-0.5 p-0.5 cursor-grab active:cursor-grabbing a11y-focus rounded"
               onClick={(e) => {
                 e.preventDefault();
                 e.stopPropagation();
@@ -128,30 +128,29 @@ export function KpiCard({
               aria-label={`Drag to reorder ${label}`}
               {...dragHandleProps}
             >
-              <GripVertical size={14} aria-hidden />
+              <GripVertical size={12} aria-hidden />
             </button>
           )}
-          <div className={`h-8 w-8 sm:h-9 sm:w-9 rounded-lg flex items-center justify-center shrink-0 ${TONE[tone]}`} aria-hidden>
-            <Icon size={16} strokeWidth={2} className="sm:hidden" />
-            <Icon size={18} strokeWidth={2} className="hidden sm:block" />
+          <div className={`h-7 w-7 rounded-md flex items-center justify-center shrink-0 ${TONE[tone]}`} aria-hidden>
+            <Icon size={14} strokeWidth={2} />
           </div>
         </div>
-        <div className="flex items-center gap-1 shrink-0">
+        <div className="flex items-center gap-0.5 shrink-0">
           {trend !== undefined && (
             <span
-              className={`inline-flex items-center gap-0.5 text-[11px] sm:text-xs font-medium ${
+              className={`inline-flex items-center gap-0.5 text-[10px] sm:text-[11px] font-medium ${
                 trend >= 0 ? "text-[var(--status-green)]" : "text-[var(--status-red)]"
               }`}
               aria-label={`${trend >= 0 ? "Up" : "Down"} ${Math.abs(trend).toFixed(1)} percent`}
             >
-              {trend >= 0 ? <ArrowUpRight size={13} aria-hidden /> : <ArrowDownRight size={13} aria-hidden />}
+              {trend >= 0 ? <ArrowUpRight size={11} aria-hidden /> : <ArrowDownRight size={11} aria-hidden />}
               {Math.abs(trend).toFixed(1)}%
             </span>
           )}
           {onExpand && (
             <button
               type="button"
-              className="h-7 w-7 inline-flex items-center justify-center rounded-md text-[var(--muted-fg)] hover:bg-[var(--surface-muted)] hover:text-[var(--foreground)] a11y-focus opacity-0 group-hover:opacity-100 focus:opacity-100 transition-opacity"
+              className="h-6 w-6 inline-flex items-center justify-center rounded-md text-[var(--muted-fg)] hover:bg-[var(--surface-muted)] hover:text-[var(--foreground)] a11y-focus opacity-0 group-hover:opacity-100 focus:opacity-100 transition-opacity"
               aria-label={`Expand details for ${label}`}
               onClick={(e) => {
                 e.preventDefault();
@@ -159,12 +158,12 @@ export function KpiCard({
                 onExpand();
               }}
             >
-              <Maximize2 size={13} aria-hidden />
+              <Maximize2 size={11} aria-hidden />
             </button>
           )}
           {href && (
             <ArrowUpRight
-              size={14}
+              size={12}
               aria-hidden
               className="text-[var(--muted-fg)] opacity-0 group-hover:opacity-100 transition-opacity"
             />
@@ -172,19 +171,19 @@ export function KpiCard({
         </div>
       </div>
 
-      <div className="mt-2.5 sm:mt-3">
-        <p className="text-xl sm:text-2xl font-semibold text-[var(--foreground)] tabular-nums leading-tight truncate">
+      <div className="mt-1.5 sm:mt-2">
+        <p className="text-lg sm:text-xl font-semibold text-[var(--foreground)] tabular-nums leading-tight truncate">
           {value}
         </p>
-        <p className="text-[11px] sm:text-xs text-[var(--muted)] mt-1 line-clamp-2">{label}</p>
+        <p className="text-[10px] sm:text-[11px] text-[var(--muted)] mt-0.5 line-clamp-2">{label}</p>
         {sub && (
-          <p className="text-[10px] sm:text-[11px] text-[var(--muted-fg)] mt-0.5 truncate">{sub}</p>
+          <p className="text-[9px] sm:text-[10px] text-[var(--muted-fg)] mt-0.5 truncate">{sub}</p>
         )}
       </div>
 
       {sparkline && sparkline.length > 0 && (
         <div
-          className="mt-2 sm:mt-3 -mx-1 hidden min-[380px]:block"
+          className="mt-1.5 sm:mt-2 -mx-0.5 hidden min-[380px]:block"
           onClick={(e) => {
             e.preventDefault();
             e.stopPropagation();
@@ -196,21 +195,21 @@ export function KpiCard({
             data={sparkline}
             dataKey="value"
             color={sparkColor ?? "var(--status-blue)"}
-            height={32}
+            height={22}
             id={sparkKey ?? label}
           />
         </div>
       )}
 
       {target && target.status !== "none" && (
-        <div className="mt-3" aria-label={`${target.label}: ${Math.round(Math.min(target.pct, 999))} percent of target`}>
-          <div className="flex items-center justify-between gap-2 mb-1">
-            <p className="text-[10px] text-[var(--muted-fg)] truncate">{target.label}</p>
-            <p className="text-[10px] font-medium text-[var(--muted)] tabular-nums shrink-0">
+        <div className="mt-2" aria-label={`${target.label}: ${Math.round(Math.min(target.pct, 999))} percent of target`}>
+          <div className="flex items-center justify-between gap-2 mb-0.5">
+            <p className="text-[9px] text-[var(--muted-fg)] truncate">{target.label}</p>
+            <p className="text-[9px] font-medium text-[var(--muted)] tabular-nums shrink-0">
               {Math.round(Math.min(target.pct, 999))}%
             </p>
           </div>
-          <div className="h-1.5 rounded-full bg-[var(--surface-muted)] overflow-hidden" aria-hidden>
+          <div className="h-1 rounded-full bg-[var(--surface-muted)] overflow-hidden" aria-hidden>
             <div
               className={`h-full rounded-full transition-all ${BAR[target.status]}`}
               style={{ width: `${Math.min(target.pct, 100)}%` }}
@@ -261,22 +260,22 @@ export function KpiCard({
 
 export function KpiCardSkeleton() {
   return (
-    <div className="bg-[var(--card-bg)] rounded-xl border border-[var(--border-subtle)] p-3 sm:p-4 h-[140px] sm:h-[180px] animate-pulse">
+    <div className="bg-[var(--card-bg)] rounded-lg border border-[var(--border-subtle)] p-2.5 sm:p-3 h-[112px] sm:h-[128px] animate-pulse">
       <div className="flex justify-between">
-        <div className="h-8 w-8 sm:h-9 sm:w-9 rounded-lg bg-[var(--surface-muted)]" />
-        <div className="h-4 w-10 rounded bg-[var(--surface-muted)]" />
+        <div className="h-7 w-7 rounded-md bg-[var(--surface-muted)]" />
+        <div className="h-3 w-8 rounded bg-[var(--surface-muted)]" />
       </div>
-      <div className="mt-3 sm:mt-4 h-6 sm:h-7 w-20 sm:w-24 rounded bg-[var(--surface-muted)]" />
-      <div className="mt-2 h-3 w-24 sm:w-28 rounded bg-[var(--surface-muted)]" />
-      <div className="mt-3 sm:mt-4 h-8 sm:h-10 w-full rounded bg-[var(--surface-hover)] hidden min-[380px]:block" />
-      <div className="mt-3 h-1.5 w-full rounded-full bg-[var(--surface-muted)]" />
+      <div className="mt-2 h-5 w-16 sm:w-20 rounded bg-[var(--surface-muted)]" />
+      <div className="mt-1.5 h-2.5 w-20 sm:w-24 rounded bg-[var(--surface-muted)]" />
+      <div className="mt-2 h-5 w-full rounded bg-[var(--surface-hover)] hidden min-[380px]:block" />
+      <div className="mt-2 h-1 w-full rounded-full bg-[var(--surface-muted)]" />
     </div>
   );
 }
 
 export function KpiGridSkeleton() {
   return (
-    <div className="grid grid-cols-1 min-[380px]:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-3 sm:gap-4 mb-6">
+    <div className="grid grid-cols-1 min-[380px]:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-2.5 sm:gap-3 mb-6">
       {Array.from({ length: 8 }).map((_, i) => (
         <KpiCardSkeleton key={i} />
       ))}

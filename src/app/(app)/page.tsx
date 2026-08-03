@@ -1,7 +1,6 @@
 import { PageHeader } from "@/components/layout/PageHeader";
 import { DashboardView } from "@/components/DashboardView";
 import { DashboardToolbar } from "@/components/DashboardToolbar";
-import { DashboardTour } from "@/components/DashboardTour";
 import { parseDashboardFilters } from "@/lib/dashboard-filters";
 import { getSession } from "@/lib/auth";
 import { redirect } from "next/navigation";
@@ -47,8 +46,6 @@ export default async function DashboardPage({
         filters={filters}
         searchParams={sp}
       />
-
-      <DashboardTour />
     </div>
   );
 }

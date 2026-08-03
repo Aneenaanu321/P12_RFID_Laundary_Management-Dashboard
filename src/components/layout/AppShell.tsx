@@ -76,7 +76,6 @@ export function AppShell({
   return (
     <ToastProvider>
       <div className="min-h-screen bg-[var(--background)]">
-        {/* Mobile backdrop — overlay drawer only below lg */}
         <div
           className={`fixed inset-0 z-40 bg-black/40 transition-opacity lg:hidden no-print ${
             open ? "opacity-100 pointer-events-auto" : "opacity-0 pointer-events-none"
@@ -85,40 +84,38 @@ export function AppShell({
           aria-hidden={!open}
         />
 
-        <div className="flex min-h-screen">
-          {/* Desktop: in-flow sidebar pushes content. Mobile: fixed overlay drawer. */}
-          <div className="no-print shrink-0">
-            <Sidebar role={role} name={name} open={open} onToggle={toggle} />
-          </div>
+        <div className="no-print">
+          <Sidebar role={role} name={name} open={open} onToggle={toggle} />
+        </div>
 
-          <div
-            className={`flex min-h-screen min-w-0 flex-1 flex-col transition-[padding] duration-300 ${
-              open ? "max-lg:pl-0" : "max-lg:pl-14"
-            }`}
-          >
-            <div className="no-print">
-              <Suspense fallback={null}>
-                <NavigationProgress />
-              </Suspense>
-              <Suspense
-                fallback={
-                  <div className="h-14 sm:h-16 border-b border-[var(--border-subtle)] bg-[var(--header-bg)]" />
-                }
-              >
-                <AppHeader
-                  alertCount={alertCount}
-                  userName={name}
-                  userRole={ROLE_LABELS[role] ?? role}
-                />
-              </Suspense>
-            </div>
-            <main className="flex-1 p-4 sm:p-6 max-w-[1600px] w-full mx-auto print:max-w-none print:p-0">
-              {children}
-            </main>
-            <footer className="px-4 sm:px-6 py-4 text-center text-xs text-[var(--muted-fg)] border-t border-[var(--border-subtle)] no-print">
-              © {new Date().getFullYear()} ibTech. All rights reserved.
-            </footer>
+        {/* Padding matches fixed sidebar width so content stays fully visible */}
+        <div
+          className={`min-h-screen flex flex-col transition-[padding] duration-300 print:pl-0 ${
+            open ? "pl-64" : "pl-14"
+          }`}
+        >
+          <div className="no-print">
+            <Suspense fallback={null}>
+              <NavigationProgress />
+            </Suspense>
+            <Suspense
+              fallback={
+                <div className="h-14 sm:h-16 border-b border-[var(--border-subtle)] bg-[var(--header-bg)]" />
+              }
+            >
+              <AppHeader
+                alertCount={alertCount}
+                userName={name}
+                userRole={ROLE_LABELS[role] ?? role}
+              />
+            </Suspense>
           </div>
+          <main className="flex-1 p-4 sm:p-6 max-w-[1600px] w-full mx-auto print:max-w-none print:p-0">
+            {children}
+          </main>
+          <footer className="px-4 sm:px-6 py-4 text-center text-xs text-[var(--muted-fg)] border-t border-[var(--border-subtle)] no-print">
+            © {new Date().getFullYear()} ibTech. All rights reserved.
+          </footer>
         </div>
       </div>
     </ToastProvider>
