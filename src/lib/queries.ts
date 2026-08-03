@@ -351,13 +351,75 @@ export function getCustomerDeptBreakdown(customerId: string) {
 export function getCustomerLocations(customerId?: string) {
   const where = customerId ? "WHERE l.customerId = ?" : "";
   const params = customerId ? [customerId] : [];
-  return all<{ id: string; name: string; city: string | null; customerName: string; itemCount: number }>(
-    `SELECT l.id, l.name, l.city, c.name as customerName, COUNT(i.id) as itemCount
-     FROM Location l JOIN Customer c ON c.id = l.customerId
+  return all<{
+    id: string;
+    name: string;
+    city: string | null;
+    customerId: string;
+    customerName: string;
+    itemCount: number;
+    expected: number;
+    received: number;
+    excess: number;
+    shortfall: number;
+  }>(
+    `SELECT
+       l.id,
+       l.name,
+       l.city,
+       c.id as customerId,
+       c.name as customerName,
+       COUNT(i.id) as itemCount,
+       SUM(CASE WHEN i.id IS NOT NULL AND i.customerId = l.customerId AND i.disposed = 0 THEN 1 ELSE 0 END) as expected,
+       SUM(CASE
+         WHEN i.id IS NOT NULL AND i.customerId = l.customerId AND i.disposed = 0
+           AND i.missing = 0 AND i.currentStatus = 'ACTIVE'
+         THEN 1 ELSE 0 END) as received,
+       SUM(CASE WHEN i.id IS NOT NULL AND i.customerId != l.customerId AND i.disposed = 0 THEN 1 ELSE 0 END) as excess,
+       SUM(CASE
+         WHEN i.id IS NOT NULL AND i.customerId = l.customerId AND i.disposed = 0
+           AND (i.missing = 1 OR i.currentStatus != 'ACTIVE')
+         THEN 1 ELSE 0 END) as shortfall
+     FROM Location l
+     JOIN Customer c ON c.id = l.customerId
      LEFT JOIN Item i ON i.locationId = l.id
      ${where}
-     GROUP BY l.id ORDER BY itemCount DESC`,
+     GROUP BY l.id
+     ORDER BY excess DESC, itemCount DESC`,
     params
+  );
+}
+
+/** Items sitting at a location that belongs to a different customer (misroutes). */
+export function getMisroutedItems(limit = 50) {
+  return all<{
+    id: string;
+    itemCode: string;
+    itemTypeName: string;
+    ownerName: string;
+    locationName: string;
+    locationCustomerName: string;
+    currentStatus: string;
+    lastReadAt: string | null;
+  }>(
+    `SELECT
+       i.id,
+       i.itemCode,
+       it.name as itemTypeName,
+       oc.name as ownerName,
+       l.name as locationName,
+       lc.name as locationCustomerName,
+       i.currentStatus,
+       i.lastReadAt
+     FROM Item i
+     JOIN ItemType it ON it.id = i.itemTypeId
+     JOIN Customer oc ON oc.id = i.customerId
+     JOIN Location l ON l.id = i.locationId
+     JOIN Customer lc ON lc.id = l.customerId
+     WHERE i.disposed = 0 AND i.customerId != l.customerId
+     ORDER BY i.lastReadAt DESC
+     LIMIT ?`,
+    [limit]
   );
 }
 

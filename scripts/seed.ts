@@ -375,6 +375,38 @@ try {
 console.log(`Inserted ${itemCounter} items.`);
 
 // ---------------------------------------------------------------------------
+// 5b. Simulate misroutes (e.g. hospital gown delivered to a gym site)
+// ---------------------------------------------------------------------------
+console.log("Injecting misroute samples (wrong-customer locations)...");
+const hospitalItems = db
+  .prepare(
+    `SELECT i.id FROM Item i
+     JOIN Customer c ON c.id = i.customerId
+     WHERE c.type = 'HOSPITAL' AND i.disposed = 0 AND i.missing = 0
+     ORDER BY RANDOM() LIMIT ?`
+  )
+  .all(SEED_SCALE < 1 ? 12 : 28) as { id: string }[];
+const gymLocations = locations.filter((l) => {
+  const cust = customers.find((c) => c.id === l.customerId);
+  return cust?.type === "GYM";
+});
+const hotelLocations = locations.filter((l) => {
+  const cust = customers.find((c) => c.id === l.customerId);
+  return cust?.type === "HOTEL";
+});
+const misrouteTarget = [...gymLocations, ...hotelLocations];
+if (hospitalItems.length && misrouteTarget.length) {
+  const upd = db.prepare(
+    `UPDATE Item SET locationId = ?, currentZone = 'WITH_CUSTOMER', currentStatus = 'ACTIVE', missing = 0, missingSince = NULL, lastReadAt = ? WHERE id = ?`
+  );
+  for (const row of hospitalItems) {
+    const dest = pick(misrouteTarget);
+    upd.run(dest.id, isoDaysAgo(randInt(0, 2)), row.id);
+  }
+  console.log(`Misrouted ${hospitalItems.length} hospital items onto gym/hotel sites.`);
+}
+
+// ---------------------------------------------------------------------------
 // 6. RFID Events (~2,200 realistic events across last 48h)
 // ---------------------------------------------------------------------------
 console.log("Generating RFID events...");
@@ -515,6 +547,25 @@ insAlert.run(
 );
 insAlert.run(id(), "SUCCESS", "Gym A reconciliation completed with no discrepancies flagged for review.", "BATCH", "Customer", customers.find((c) => c.name === "Gym A")!.id, isoDaysAgo(1));
 insAlert.run(id(), "WARNING", "RDR-011 reader showing reduced read rate — inspection recommended.", "READER", "RfidReader", readers.find((r) => r.code === "RDR-011")!.id, isoDaysAgo(0));
+
+const misrouteCount = (
+  db
+    .prepare(
+      `SELECT COUNT(*) as c FROM Item i JOIN Location l ON l.id = i.locationId WHERE i.disposed = 0 AND i.customerId != l.customerId`
+    )
+    .get() as { c: number }
+).c;
+if (misrouteCount > 0) {
+  insAlert.run(
+    id(),
+    "CRITICAL",
+    `${misrouteCount} items appear at the wrong customer site (e.g. hospital linen at a gym/hotel) — review Locations → Misroute watch.`,
+    "MISROUTE",
+    null,
+    null,
+    isoDaysAgo(0)
+  );
+}
 
 // ---------------------------------------------------------------------------
 // 10. Daily snapshots (90 days) for trend charts
