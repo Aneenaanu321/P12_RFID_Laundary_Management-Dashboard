@@ -22,7 +22,7 @@ export default async function Page({
   const { rows, total, pageCount } = getMissingItemsPage(
     { search: sp.q, customerId: sp.customerId },
     page,
-    25
+    15
   );
 
   const params = new URLSearchParams();

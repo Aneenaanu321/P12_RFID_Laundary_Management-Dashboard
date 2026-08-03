@@ -1,11 +1,12 @@
 "use client";
 
-import { ReactNode, useMemo, useState } from "react";
+import { ReactNode, useEffect, useMemo, useState } from "react";
 import { X } from "lucide-react";
 import { Input } from "@/components/ui/Input";
 import { Select } from "@/components/ui/Select";
 import { Button } from "@/components/ui/Button";
 import { ClientTableExportButtons } from "@/components/TableExportButtons";
+import { ClientPagination, TABLE_PAGE_SIZE } from "@/components/ui/ClientPagination";
 
 export type ClientFilterDef<T> = {
   key: string;
@@ -21,6 +22,7 @@ export function ClientTableSearch<T extends object>({
   searchPlaceholder = "Search…",
   emptyMessage = "No rows match your search.",
   exportFilename,
+  pageSize = TABLE_PAGE_SIZE,
   children,
 }: {
   rows: T[];
@@ -30,10 +32,12 @@ export function ClientTableSearch<T extends object>({
   emptyMessage?: string;
   /** When set, shows CSV/Excel download for the filtered rows. */
   exportFilename?: string;
+  pageSize?: number;
   children: (filtered: T[]) => ReactNode;
 }) {
   const [search, setSearch] = useState("");
   const [selected, setSelected] = useState<Record<string, string>>({});
+  const [page, setPage] = useState(1);
 
   const filtered = useMemo(() => {
     const q = search.trim().toLowerCase();
@@ -49,6 +53,22 @@ export function ClientTableSearch<T extends object>({
       return true;
     });
   }, [rows, search, selected, filters, getSearchText]);
+
+  const pageCount = Math.max(1, Math.ceil(filtered.length / pageSize));
+  const safePage = Math.min(page, pageCount);
+
+  useEffect(() => {
+    setPage(1);
+  }, [search, selected, rows]);
+
+  useEffect(() => {
+    if (page > pageCount) setPage(pageCount);
+  }, [page, pageCount]);
+
+  const pageRows = useMemo(() => {
+    const start = (safePage - 1) * pageSize;
+    return filtered.slice(start, start + pageSize);
+  }, [filtered, safePage, pageSize]);
 
   const hasFilters = Boolean(search.trim()) || filters.some((f) => selected[f.key]);
   const exportRows = useMemo(
@@ -109,7 +129,16 @@ export function ClientTableSearch<T extends object>({
       {filtered.length === 0 ? (
         <p className="px-5 py-8 text-sm text-[var(--muted)] text-center">{emptyMessage}</p>
       ) : (
-        children(filtered)
+        <>
+          {children(pageRows)}
+          <ClientPagination
+            page={safePage}
+            pageCount={pageCount}
+            onPageChange={setPage}
+            total={filtered.length}
+            pageSize={pageSize}
+          />
+        </>
       )}
     </>
   );

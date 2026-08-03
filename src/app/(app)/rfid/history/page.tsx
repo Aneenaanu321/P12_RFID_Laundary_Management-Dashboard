@@ -15,7 +15,7 @@ export default async function Page({
   const { rows, total, pageCount } = getEventsPage(
     { search: sp.q, customerId: sp.customerId, eventType: sp.eventType, readerId: sp.readerId },
     page,
-    40
+    15
   );
   const customers = getCustomers();
   const readers = getReaders();

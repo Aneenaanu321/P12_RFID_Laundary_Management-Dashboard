@@ -22,7 +22,7 @@ export default async function OperationsPage({
       customerId: sp.customerId,
     },
     page,
-    20,
+    15,
     "lastReadAt DESC"
   );
 

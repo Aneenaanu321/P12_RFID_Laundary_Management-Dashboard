@@ -21,7 +21,7 @@ export default async function Page({
       customerId: sp.customerId,
     },
     page,
-    25,
+    15,
     "washCycles DESC"
   );
 

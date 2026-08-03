@@ -34,7 +34,7 @@ export default async function CustomerDetailPage({
   const { rows, pageCount } = getItemsPage(
     { customerId, search: sp.q, currentStatus: sp.status },
     page,
-    20,
+    15,
     "lastReadAt DESC"
   );
   const settlement = getSettlementForCustomer(customerId);

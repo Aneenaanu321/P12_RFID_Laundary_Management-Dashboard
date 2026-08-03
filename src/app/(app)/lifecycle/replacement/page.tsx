@@ -16,7 +16,7 @@ export default async function Page({
   const { rows, total, pageCount } = getItemsPage(
     { disposed: true, search: sp.q, customerId: sp.customerId },
     page,
-    25,
+    15,
     "disposedAt DESC"
   );
 

@@ -7,7 +7,7 @@ import { TableFilters } from "@/components/TableFilters";
 import { getCustomersPage, getKpis } from "@/lib/queries";
 import { CUSTOMER_TYPES } from "@/lib/dashboard-filters";
 
-const PAGE_SIZE = 10;
+const PAGE_SIZE = 15;
 
 function firstParam(value: string | string[] | undefined): string | undefined {
   return Array.isArray(value) ? value[0] : value;

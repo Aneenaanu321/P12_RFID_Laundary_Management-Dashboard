@@ -29,7 +29,7 @@ export async function ZoneOperationsPage({
   const { rows, total, pageCount } = getItemsPage(
     { currentZone: zone, search, customerId, currentStatus: status },
     page,
-    20,
+    15,
     "lastReadAt DESC"
   );
   const customers = getCustomers();

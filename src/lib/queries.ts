@@ -458,7 +458,7 @@ function buildItemWhere(f: ItemFilters) {
   return { where: clauses.length ? `WHERE ${clauses.join(" AND ")}` : "", params };
 }
 
-export function getItemsPage(f: ItemFilters, page = 1, pageSize = 25, sort = "lastReadAt DESC") {
+export function getItemsPage(f: ItemFilters, page = 1, pageSize = 15, sort = "lastReadAt DESC") {
   const { where, params } = buildItemWhere(f);
   const total = get<{ c: number }>(
     `SELECT COUNT(*) as c FROM Item i JOIN ItemType it ON it.id = i.itemTypeId ${where}`,
@@ -502,7 +502,7 @@ export function getItemEvents(itemId: string) {
 export type EventFilters = {
   customerId?: string; zone?: string; eventType?: string; readerId?: string; status?: string; search?: string;
 };
-export function getEventsPage(f: EventFilters, page = 1, pageSize = 30) {
+export function getEventsPage(f: EventFilters, page = 1, pageSize = 15) {
   const clauses: string[] = [];
   const params: unknown[] = [];
   if (f.customerId) { clauses.push("i.customerId = ?"); params.push(f.customerId); }
@@ -724,7 +724,7 @@ export function getMissingByLocation() {
     `SELECT l.name as locationName, COUNT(*) as c FROM Item i JOIN Location l ON l.id = i.locationId WHERE i.missing = 1 GROUP BY l.name ORDER BY c DESC`
   );
 }
-export function getMissingItemsPage(f: ItemFilters, page = 1, pageSize = 25) {
+export function getMissingItemsPage(f: ItemFilters, page = 1, pageSize = 15) {
   return getItemsPage({ ...f, missing: true }, page, pageSize, "missingSince ASC");
 }
 

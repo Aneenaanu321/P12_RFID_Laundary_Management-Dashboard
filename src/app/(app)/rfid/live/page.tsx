@@ -4,7 +4,7 @@ import { LiveFeed } from "@/components/LiveFeed";
 import { getEventsPage } from "@/lib/queries";
 
 export default function Page() {
-  const { rows } = getEventsPage({}, 1, 25);
+  const { rows } = getEventsPage({}, 1, 15);
   const initial = rows.map((r) => ({
     id: r.id, itemCode: r.itemCode, itemTypeName: r.itemTypeName, customerName: r.customerName,
     zone: r.zone, eventType: r.eventType, readerCode: r.readerCode, timestamp: r.timestamp,

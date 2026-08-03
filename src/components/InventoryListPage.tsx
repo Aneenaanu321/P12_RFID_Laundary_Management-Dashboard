@@ -19,7 +19,7 @@ export async function InventoryListPage({
     customerId: searchParams.customerId,
     currentStatus: searchParams.status,
   };
-  const { rows, total, pageCount } = getItemsPage(filters, page, 25, "lastReadAt DESC");
+  const { rows, total, pageCount } = getItemsPage(filters, page, 15, "lastReadAt DESC");
   const customers = getCustomers();
 
   const params = new URLSearchParams();

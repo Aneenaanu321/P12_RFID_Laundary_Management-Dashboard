@@ -5,6 +5,7 @@ import Link from "next/link";
 import { StatusBadge } from "@/components/ui/StatusBadge";
 import { Input } from "@/components/ui/Input";
 import { ClientTableExportButtons } from "@/components/TableExportButtons";
+import { ClientPagination, TABLE_PAGE_SIZE } from "@/components/ui/ClientPagination";
 import { titleCase } from "@/lib/format";
 
 type LiveEvent = {
@@ -18,6 +19,7 @@ export function LiveFeed({ initial }: { initial: LiveEvent[] }) {
   const [events, setEvents] = useState<LiveEvent[]>(initial);
   const [status, setStatus] = useState<ConnState>("connecting");
   const [query, setQuery] = useState("");
+  const [page, setPage] = useState(1);
   const esRef = useRef<EventSource | null>(null);
   const [retryKey, setRetryKey] = useState(0);
 
@@ -62,6 +64,17 @@ export function LiveFeed({ initial }: { initial: LiveEvent[] }) {
         .includes(q)
     );
   }, [events, query]);
+
+  const pageCount = Math.max(1, Math.ceil(filtered.length / TABLE_PAGE_SIZE));
+  const safePage = Math.min(page, pageCount);
+  const pageRows = useMemo(() => {
+    const start = (safePage - 1) * TABLE_PAGE_SIZE;
+    return filtered.slice(start, start + TABLE_PAGE_SIZE);
+  }, [filtered, safePage]);
+
+  useEffect(() => {
+    setPage(1);
+  }, [query]);
 
   const statusCopy =
     status === "live"
@@ -112,7 +125,7 @@ export function LiveFeed({ initial }: { initial: LiveEvent[] }) {
           </button>
         )}
       </div>
-      <div className="overflow-x-auto max-h-[560px] overflow-y-auto">
+      <div className="overflow-x-auto">
         <table className="w-full text-sm" data-testid="live-feed-table">
           <thead className="sticky top-0 bg-[var(--card-bg)] z-10">
             <tr className="border-b border-[var(--border-subtle)] text-left text-xs text-[var(--muted)] uppercase tracking-wider">
@@ -127,17 +140,17 @@ export function LiveFeed({ initial }: { initial: LiveEvent[] }) {
             </tr>
           </thead>
           <tbody className="divide-y divide-[var(--border-subtle)]">
-            {filtered.length === 0 ? (
+            {pageRows.length === 0 ? (
               <tr>
                 <td colSpan={8} className="px-5 py-8 text-center text-sm text-[var(--muted)]">
                   No events match your filter.
                 </td>
               </tr>
             ) : (
-              filtered.map((e, i) => (
+              pageRows.map((e, i) => (
                 <tr
                   key={`${e.id}-${i}`}
-                  className={i === 0 && !query ? "bg-[var(--status-blue-bg)]/50" : "hover:bg-[var(--surface-hover)]"}
+                  className={i === 0 && !query && safePage === 1 ? "bg-[var(--status-blue-bg)]/50" : "hover:bg-[var(--surface-hover)]"}
                 >
                   <td className="px-5 py-2.5 text-[var(--muted)] tabular-nums whitespace-nowrap">
                     {new Date(e.timestamp).toLocaleTimeString("en-US", { hour: "2-digit", minute: "2-digit", second: "2-digit" })}
@@ -157,6 +170,12 @@ export function LiveFeed({ initial }: { initial: LiveEvent[] }) {
           </tbody>
         </table>
       </div>
+      <ClientPagination
+        page={safePage}
+        pageCount={pageCount}
+        onPageChange={setPage}
+        total={filtered.length}
+      />
     </div>
   );
 }
