@@ -33,6 +33,9 @@ export async function InventoryListPage({
       <Card>
         <TableFilters
           searchPlaceholder="Search EPC or item code..."
+          exportResource="items"
+          exportFilename={category ? `${category.toLowerCase()}-items` : "inventory-items"}
+          exportParams={{ category }}
           filters={[
             { key: "customerId", label: "All Customers", options: customers.map((c) => ({ value: c.id, label: c.name })) },
             { key: "status", label: "All Statuses", options: [

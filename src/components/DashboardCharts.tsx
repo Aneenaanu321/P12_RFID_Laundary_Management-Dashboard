@@ -1,7 +1,7 @@
 import { Package } from "lucide-react";
 import { Card, CardHeader } from "@/components/ui/Card";
 import { EmptyState } from "@/components/ui/EmptyState";
-import { TrendAreaChart, DonutChart, BarHorizontal } from "@/components/charts/Charts";
+import { TrendAreaChart, DonutChart, BarHorizontal } from "@/components/charts/LazyCharts";
 import { getSnapshotSeries, shiftDate, getKpis, getCustomers } from "@/lib/queries";
 import { parseDashboardFilters, resolveDateWindow } from "@/lib/dashboard-filters";
 import { appendLinearForecast } from "@/lib/kpi";

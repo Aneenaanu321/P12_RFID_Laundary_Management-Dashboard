@@ -30,6 +30,8 @@ export default async function Page({
       <Card>
         <TableFilters
           searchPlaceholder="Search item code..."
+          exportResource="events"
+          exportFilename="rfid-events"
           filters={[
             { key: "customerId", label: "All Customers", options: customers.map((c) => ({ value: c.id, label: c.name })) },
             { key: "eventType", label: "All Event Types", options: EVENT_TYPES.map((t) => ({ value: t, label: t })) },

@@ -8,21 +8,16 @@ import {
   useState,
   useCallback,
 } from "react";
-import { ArrowDown, ArrowUp, ArrowUpDown, Rows3 } from "lucide-react";
-import { Button } from "@/components/ui/Button";
+import { ArrowDown, ArrowUp, ArrowUpDown } from "lucide-react";
 import { cn } from "@/lib/cn";
 
-export type TableDensity = "comfortable" | "compact";
-
 type TableContextValue = {
-  density: TableDensity;
   sortKey: string | null;
   sortDir: "asc" | "desc";
   setSort: (key: string) => void;
 };
 
 const TableContext = createContext<TableContextValue>({
-  density: "comfortable",
   sortKey: null,
   sortDir: "asc",
   setSort: () => {},
@@ -35,20 +30,12 @@ export function useDataTable() {
 export function DataTable({
   children,
   className,
-  density: densityProp,
-  defaultDensity = "comfortable",
-  showDensityToggle = true,
   toolbar,
 }: {
   children: ReactNode;
   className?: string;
-  density?: TableDensity;
-  defaultDensity?: TableDensity;
-  showDensityToggle?: boolean;
   toolbar?: ReactNode;
 }) {
-  const [densityState, setDensity] = useState<TableDensity>(defaultDensity);
-  const density = densityProp ?? densityState;
   const [sortKey, setSortKey] = useState<string | null>(null);
   const [sortDir, setSortDir] = useState<"asc" | "desc">("asc");
 
@@ -64,37 +51,19 @@ export function DataTable({
   }, []);
 
   const value = useMemo(
-    () => ({ density, sortKey, sortDir, setSort }),
-    [density, sortKey, sortDir, setSort]
+    () => ({ sortKey, sortDir, setSort }),
+    [sortKey, sortDir, setSort]
   );
 
   return (
     <TableContext.Provider value={value}>
-      {(showDensityToggle || toolbar) && (
+      {toolbar && (
         <div className="flex items-center justify-end gap-2 px-3 py-2 border-b border-[var(--border-subtle)] no-print">
           {toolbar}
-          {showDensityToggle && !densityProp && (
-            <Button
-              type="button"
-              variant="ghost"
-              size="sm"
-              iconLeft={<Rows3 size={13} aria-hidden />}
-              onClick={() => setDensity((d) => (d === "comfortable" ? "compact" : "comfortable"))}
-              aria-label={`Row density: ${density}. Click to toggle.`}
-              title={`Density: ${density}`}
-            >
-              {density === "comfortable" ? "Compact" : "Comfortable"}
-            </Button>
-          )}
         </div>
       )}
       <div className={cn("overflow-x-auto max-h-[70vh]", className)}>
-        <table
-          className={cn(
-            "w-full text-sm",
-            density === "compact" && "text-[var(--text-sm)] [&_th]:py-2 [&_td]:py-1.5"
-          )}
-        >
+        <table className="w-full text-[var(--text-sm)] [&_th]:py-2 [&_td]:py-1.5">
           {children}
         </table>
       </div>
@@ -137,7 +106,7 @@ export function DataTableSortHeader({
     <th
       scope="col"
       className={cn(
-        "px-3 py-3 font-medium first:px-5",
+        "px-3 py-2 font-medium first:px-5",
         align === "right" && "text-right",
         className
       )}
@@ -172,7 +141,7 @@ export function DataTableHeader({
     <th
       scope="col"
       className={cn(
-        "px-3 py-3 font-medium first:px-5",
+        "px-3 py-2 font-medium first:px-5",
         align === "right" && "text-right",
         className
       )}
@@ -217,7 +186,7 @@ export function DataTableCell({
   return (
     <td
       className={cn(
-        "px-3 py-3 first:px-5",
+        "px-3 py-1.5 first:px-5",
         align === "right" && "text-right",
         className
       )}
@@ -230,14 +199,14 @@ export function DataTableCell({
 export function TableSkeleton({ rows = 6, cols = 5 }: { rows?: number; cols?: number }) {
   return (
     <div className="bg-[var(--card-bg)] rounded-[var(--radius-lg)] border border-[var(--border-subtle)] overflow-hidden animate-pulse">
-      <div className="border-b border-[var(--border-subtle)] px-5 py-3 flex gap-4">
+      <div className="border-b border-[var(--border-subtle)] px-5 py-2 flex gap-4">
         {Array.from({ length: cols }).map((_, i) => (
           <div key={i} className="h-3 flex-1 rounded bg-[var(--surface-muted)]" />
         ))}
       </div>
       <div className="divide-y divide-[var(--border-subtle)]">
         {Array.from({ length: rows }).map((_, r) => (
-          <div key={r} className="px-5 py-3 flex gap-4">
+          <div key={r} className="px-5 py-1.5 flex gap-4">
             {Array.from({ length: cols }).map((_, c) => (
               <div key={c} className="h-4 flex-1 rounded bg-[var(--surface-muted)]" />
             ))}

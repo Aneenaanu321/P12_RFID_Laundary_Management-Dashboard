@@ -1,5 +1,4 @@
 import { Suspense, type ReactNode } from "react";
-import { DashboardFilters, FiltersSkeleton } from "@/components/DashboardFilters";
 import { DashboardKpis } from "@/components/DashboardKpis";
 import { DashboardCharts } from "@/components/DashboardCharts";
 import { DashboardCustomers } from "@/components/DashboardCustomers";
@@ -17,7 +16,6 @@ import { SectionErrorBoundary } from "@/components/SectionErrorBoundary";
 import { getCriticalAlerts } from "@/lib/queries";
 import {
   getDashboardSections,
-  getDashboardVariantLabel,
   type DashboardSectionId,
 } from "@/lib/dashboard-layout";
 import type { DashboardFilterState } from "@/lib/dashboard-filters";
@@ -147,7 +145,6 @@ export function DashboardView({
   searchParams: Record<string, string | string[] | undefined>;
 }) {
   const sections = getDashboardSections(role);
-  const variantLabel = getDashboardVariantLabel(role);
   const alerts = getCriticalAlerts(3).map((a) => ({
     id: a.id,
     severity: a.severity,
@@ -158,12 +155,6 @@ export function DashboardView({
 
   return (
     <DashboardLiveProvider initialAlerts={alerts}>
-      <p className="text-xs text-[var(--muted)] mb-4 -mt-2 no-print">{variantLabel}</p>
-
-      <Suspense fallback={<FiltersSkeleton />}>
-        <DashboardFilters />
-      </Suspense>
-
       {sections.map((id) =>
         renderSection(id, { filters, searchParams, userId, role })
       )}

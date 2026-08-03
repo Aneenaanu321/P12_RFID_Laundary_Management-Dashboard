@@ -1,10 +1,10 @@
 import { PageHeader } from "@/components/layout/PageHeader";
 import { Card, CardHeader } from "@/components/ui/Card";
 import { BarVertical, DonutChart, BarHorizontal } from "@/components/charts/Charts";
+import { SearchableItemTypesTable } from "@/components/SearchableItemTypesTable";
 import {
   getWashCycleDistribution, getLifecycleStatusCounts, getAvgCyclesByCustomer, getEolForecast, getItemTypes,
 } from "@/lib/queries";
-import { fmtNumber } from "@/lib/format";
 
 export default function Page() {
   const distribution = getWashCycleDistribution();
@@ -38,30 +38,7 @@ export default function Page() {
 
       <Card>
         <CardHeader title="Wash Cycle Rules by Item Type" subtitle="Configurable thresholds — edit under Administration → Wash Cycle Rules" />
-        <div className="overflow-x-auto">
-          <table className="w-full text-sm">
-            <thead>
-              <tr className="border-b border-slate-200 text-left text-xs text-slate-500 uppercase tracking-wider">
-                <th className="px-5 py-3 font-medium">Item Type</th>
-                <th className="px-3 py-3 font-medium">Category</th>
-                <th className="px-3 py-3 font-medium">Max Wash Cycles</th>
-                <th className="px-3 py-3 font-medium">Monitor Threshold</th>
-                <th className="px-3 py-3 font-medium">Near EOL Threshold</th>
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-slate-100">
-              {itemTypes.map((t) => (
-                <tr key={t.id} className="hover:bg-slate-50">
-                  <td className="px-5 py-3 font-medium text-slate-800">{t.name}</td>
-                  <td className="px-3 py-3 text-slate-500">{t.category}</td>
-                  <td className="px-3 py-3 tabular-nums text-slate-700">{fmtNumber(t.maxWashCycles)}</td>
-                  <td className="px-3 py-3 tabular-nums text-slate-500">{t.monitorThresholdPct}%</td>
-                  <td className="px-3 py-3 tabular-nums text-slate-500">{t.nearEolThresholdPct}%</td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
+        <SearchableItemTypesTable itemTypes={itemTypes} mode="wash-rules" />
       </Card>
     </div>
   );

@@ -76,7 +76,7 @@ function LoginForm() {
           />
           <span className="text-[13px] text-[var(--auth-ink)]">Remember me for 30 days</span>
         </label>
-        {state?.error && <p className="text-sm text-red-600">{state.error}</p>}
+        {state?.error && <p className="text-sm text-[var(--status-red)]">{state.error}</p>}
         <button type="submit" disabled={pending} className={`${authButtonClass} mt-1`}>
           {pending ? "Signing in..." : "Sign in"}
         </button>

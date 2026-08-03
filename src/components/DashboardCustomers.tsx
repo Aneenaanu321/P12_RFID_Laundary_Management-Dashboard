@@ -3,6 +3,7 @@ import { Card, CardHeader } from "@/components/ui/Card";
 import { CustomerOverviewTable } from "@/components/CustomerOverviewTable";
 import { EmptyState } from "@/components/ui/EmptyState";
 import { Pagination } from "@/components/ui/Pagination";
+import { TableFilters } from "@/components/TableFilters";
 import { getCustomersPage, getKpis } from "@/lib/queries";
 import { CUSTOMER_TYPES } from "@/lib/dashboard-filters";
 
@@ -36,10 +37,12 @@ export async function DashboardCustomers({
 }) {
   const pageRaw = Number(firstParam(searchParams.page) ?? "1");
   const page = Number.isFinite(pageRaw) && pageRaw > 0 ? Math.floor(pageRaw) : 1;
+  const q = firstParam(searchParams.q);
   const { rows, total, page: safePage, pageCount } = getCustomersPage(
     customerType ?? "__all__",
     page,
-    PAGE_SIZE
+    PAGE_SIZE,
+    q
   );
   const { today } = getKpis(customerType);
   const totalItems = Number(today?.totalItems ?? 0);
@@ -47,7 +50,7 @@ export async function DashboardCustomers({
 
   if (totalItems === 0 && total === 0) {
     return (
-      <Card id="tour-customers" className="dash-enter-slow [animation-delay:200ms]">
+      <Card id="view-customers" className="mb-6 dash-enter-slow [animation-delay:200ms]">
         <EmptyState
           icon={Users}
           title="Welcome — no inventory yet"
@@ -58,7 +61,7 @@ export async function DashboardCustomers({
   }
 
   return (
-    <Card id="tour-customers" className="dash-enter-slow [animation-delay:200ms]">
+    <Card id="view-customers" className="mb-6 dash-enter-slow [animation-delay:200ms]">
       <CardHeader
         title="Customer / Organization Overview"
         subtitle={
@@ -66,6 +69,13 @@ export async function DashboardCustomers({
             ? `${typeLabel} customers (${total}) — click a row to open their detail dashboard`
             : `${total} customers — click a row to open their detail dashboard`
         }
+      />
+      <TableFilters
+        searchPlaceholder="Search customers..."
+        filters={[]}
+        exportResource="customers"
+        exportFilename="customers"
+        exportParams={{ type: customerType }}
       />
       <CustomerOverviewTable rows={rows} />
       <div className="no-print">

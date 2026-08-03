@@ -25,7 +25,7 @@ export default function ForgotPasswordPage() {
             {state.success}
           </p>
           {state.resetLink && (
-            <div className="rounded-lg border border-[var(--auth-border)] bg-white/70 p-3.5 space-y-2">
+            <div className="rounded-lg border border-[var(--auth-border)] bg-[var(--card-bg)]/70 p-3.5 space-y-2">
               <p className="text-[11px] font-semibold tracking-[0.14em] uppercase text-[var(--auth-muted)]">
                 Demo reset link
               </p>

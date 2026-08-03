@@ -88,10 +88,10 @@ export function AppShell({
           <Sidebar role={role} name={name} open={open} onToggle={toggle} />
         </div>
 
-        {/* Padding matches fixed sidebar width so content stays fully visible */}
+        {/* Mobile: full-bleed (sidebar overlays). Desktop: pad for rail / expanded nav. */}
         <div
-          className={`min-h-screen flex flex-col transition-[padding] duration-300 print:pl-0 ${
-            open ? "pl-64" : "pl-14"
+          className={`min-h-screen flex flex-col transition-[padding] duration-300 print:pl-0 pl-0 ${
+            open ? "lg:pl-64" : "lg:pl-14"
           }`}
         >
           <div className="no-print">
@@ -107,6 +107,7 @@ export function AppShell({
                 alertCount={alertCount}
                 userName={name}
                 userRole={ROLE_LABELS[role] ?? role}
+                onMenuClick={toggle}
               />
             </Suspense>
           </div>

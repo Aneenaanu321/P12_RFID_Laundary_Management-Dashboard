@@ -3,16 +3,32 @@ import { Card, CardHeader } from "@/components/ui/Card";
 import { KpiCard } from "@/components/KpiCard";
 import { MissingItemsTable } from "@/components/MissingItemsTable";
 import { Pagination } from "@/components/ui/Pagination";
+import { TableFilters } from "@/components/TableFilters";
 import { BarHorizontal } from "@/components/charts/Charts";
-import { getLossKpis, getMissingByCustomer, getMissingByLocation, getMissingItemsPage } from "@/lib/queries";
+import { getLossKpis, getMissingByCustomer, getMissingByLocation, getMissingItemsPage, getCustomers } from "@/lib/queries";
 import { fmtAED, fmtNumber } from "@/lib/format";
 
-export default async function Page({ searchParams }: { searchParams: Promise<{ page?: string }> }) {
-  const page = Number((await searchParams).page ?? 1);
+export default async function Page({
+  searchParams,
+}: {
+  searchParams: Promise<{ page?: string; q?: string; customerId?: string }>;
+}) {
+  const sp = await searchParams;
+  const page = Number(sp.page ?? 1);
   const kpis = getLossKpis();
   const byCustomer = getMissingByCustomer();
   const byLocation = getMissingByLocation().slice(0, 10);
-  const { rows, pageCount } = getMissingItemsPage({}, page, 25);
+  const customers = getCustomers();
+  const { rows, total, pageCount } = getMissingItemsPage(
+    { search: sp.q, customerId: sp.customerId },
+    page,
+    25
+  );
+
+  const params = new URLSearchParams();
+  if (sp.q) params.set("q", sp.q);
+  if (sp.customerId) params.set("customerId", sp.customerId);
+  const qs = params.toString();
 
   return (
     <div>
@@ -37,9 +53,21 @@ export default async function Page({ searchParams }: { searchParams: Promise<{ p
       </div>
 
       <Card>
-        <CardHeader title="Missing Items" />
+        <CardHeader title="Missing Items" subtitle={`${fmtNumber(total)} matching`} />
+        <TableFilters
+          searchPlaceholder="Search EPC or item code..."
+          exportResource="missing"
+          exportFilename="missing-items"
+          filters={[
+            { key: "customerId", label: "All Customers", options: customers.map((c) => ({ value: c.id, label: c.name })) },
+          ]}
+        />
         <MissingItemsTable rows={rows} path="/loss/missing" />
-        <Pagination page={page} pageCount={pageCount} buildHref={(p) => `/loss/missing?page=${p}`} />
+        <Pagination
+          page={page}
+          pageCount={pageCount}
+          buildHref={(p) => `/loss/missing?${qs}${qs ? "&" : ""}page=${p}`}
+        />
       </Card>
     </div>
   );

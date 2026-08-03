@@ -1,8 +1,10 @@
 "use client";
 
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import Link from "next/link";
 import { StatusBadge } from "@/components/ui/StatusBadge";
+import { Input } from "@/components/ui/Input";
+import { ClientTableExportButtons } from "@/components/TableExportButtons";
 import { titleCase } from "@/lib/format";
 
 type LiveEvent = {
@@ -15,6 +17,7 @@ type ConnState = "connecting" | "live" | "error";
 export function LiveFeed({ initial }: { initial: LiveEvent[] }) {
   const [events, setEvents] = useState<LiveEvent[]>(initial);
   const [status, setStatus] = useState<ConnState>("connecting");
+  const [query, setQuery] = useState("");
   const esRef = useRef<EventSource | null>(null);
   const [retryKey, setRetryKey] = useState(0);
 
@@ -50,6 +53,16 @@ export function LiveFeed({ initial }: { initial: LiveEvent[] }) {
     setRetryKey((k) => k + 1);
   }
 
+  const filtered = useMemo(() => {
+    const q = query.trim().toLowerCase();
+    if (!q) return events;
+    return events.filter((e) =>
+      `${e.itemCode} ${e.itemTypeName} ${e.customerName} ${e.zone} ${e.readerCode} ${e.eventType}`
+        .toLowerCase()
+        .includes(q)
+    );
+  }, [events, query]);
+
   const statusCopy =
     status === "live"
       ? "Live — streaming RFID reads"
@@ -60,7 +73,7 @@ export function LiveFeed({ initial }: { initial: LiveEvent[] }) {
   return (
     <div data-testid="live-feed">
       <div
-        className="flex items-center gap-2 px-5 py-3 border-b border-[var(--border-subtle)] bg-[var(--surface-muted)]/60"
+        className="flex flex-wrap items-center gap-2 px-5 py-3 border-b border-[var(--border-subtle)] bg-[var(--surface-muted)]/60"
         data-testid="sse-status"
         data-sse-state={status}
         role="status"
@@ -77,11 +90,22 @@ export function LiveFeed({ initial }: { initial: LiveEvent[] }) {
           aria-hidden
         />
         <span className="text-xs font-medium text-[var(--muted)]">{statusCopy}</span>
+        <Input
+          value={query}
+          onChange={(e) => setQuery(e.target.value)}
+          placeholder="Filter live feed..."
+          className="w-48"
+          aria-label="Filter live feed"
+        />
+        <ClientTableExportButtons
+          rows={filtered as unknown as Record<string, unknown>[]}
+          filename="live-rfid-feed"
+        />
         {status === "error" && (
           <button
             type="button"
             onClick={retry}
-            className="ml-auto text-xs font-medium text-[var(--status-blue)] hover:underline a11y-focus rounded"
+            className="text-xs font-medium text-[var(--status-blue)] hover:underline a11y-focus rounded"
             data-testid="sse-retry"
           >
             Retry connection
@@ -103,22 +127,33 @@ export function LiveFeed({ initial }: { initial: LiveEvent[] }) {
             </tr>
           </thead>
           <tbody className="divide-y divide-[var(--border-subtle)]">
-            {events.map((e, i) => (
-              <tr key={`${e.id}-${i}`} className={i === 0 ? "bg-[var(--status-blue-bg)]/50" : "hover:bg-[var(--surface-hover)]"}>
-                <td className="px-5 py-2.5 text-[var(--muted)] tabular-nums whitespace-nowrap">
-                  {new Date(e.timestamp).toLocaleTimeString("en-US", { hour: "2-digit", minute: "2-digit", second: "2-digit" })}
+            {filtered.length === 0 ? (
+              <tr>
+                <td colSpan={8} className="px-5 py-8 text-center text-sm text-[var(--muted)]">
+                  No events match your filter.
                 </td>
-                <td className="px-3 py-2.5">
-                  <Link href={`/inventory/${e.itemCode}`} className="text-[var(--status-blue)] hover:underline font-medium">{e.itemCode}</Link>
-                </td>
-                <td className="px-3 py-2.5 text-[var(--muted)]">{e.itemTypeName}</td>
-                <td className="px-3 py-2.5 text-[var(--muted)]">{e.customerName}</td>
-                <td className="px-3 py-2.5 text-[var(--muted)]">{titleCase(e.zone)}</td>
-                <td className="px-3 py-2.5 text-[var(--muted)]">{e.readerCode}</td>
-                <td className="px-3 py-2.5"><StatusBadge status={e.eventType} label={titleCase(e.eventType)} /></td>
-                <td className="px-3 py-2.5"><StatusBadge status="ACTIVE" label="Active" /></td>
               </tr>
-            ))}
+            ) : (
+              filtered.map((e, i) => (
+                <tr
+                  key={`${e.id}-${i}`}
+                  className={i === 0 && !query ? "bg-[var(--status-blue-bg)]/50" : "hover:bg-[var(--surface-hover)]"}
+                >
+                  <td className="px-5 py-2.5 text-[var(--muted)] tabular-nums whitespace-nowrap">
+                    {new Date(e.timestamp).toLocaleTimeString("en-US", { hour: "2-digit", minute: "2-digit", second: "2-digit" })}
+                  </td>
+                  <td className="px-3 py-2.5">
+                    <Link href={`/inventory/${e.itemCode}`} className="text-[var(--status-blue)] hover:underline font-medium">{e.itemCode}</Link>
+                  </td>
+                  <td className="px-3 py-2.5 text-[var(--muted)]">{e.itemTypeName}</td>
+                  <td className="px-3 py-2.5 text-[var(--muted)]">{e.customerName}</td>
+                  <td className="px-3 py-2.5 text-[var(--muted)]">{titleCase(e.zone)}</td>
+                  <td className="px-3 py-2.5 text-[var(--muted)]">{e.readerCode}</td>
+                  <td className="px-3 py-2.5"><StatusBadge status={e.eventType} label={titleCase(e.eventType)} /></td>
+                  <td className="px-3 py-2.5"><StatusBadge status="ACTIVE" label="Active" /></td>
+                </tr>
+              ))
+            )}
           </tbody>
         </table>
       </div>

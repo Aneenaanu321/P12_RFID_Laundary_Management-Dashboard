@@ -1,6 +1,6 @@
 import { PageHeader } from "@/components/layout/PageHeader";
 import { Card } from "@/components/ui/Card";
-import { CustomerOverviewTable } from "@/components/CustomerOverviewTable";
+import { SearchableCustomerOverview } from "@/components/SearchableCustomerOverview";
 import { getCustomers } from "@/lib/queries";
 
 export function CustomerTypeListPage({ type, title, subtitle }: { type?: string; title: string; subtitle: string }) {
@@ -9,7 +9,7 @@ export function CustomerTypeListPage({ type, title, subtitle }: { type?: string;
     <div>
       <PageHeader title={title} subtitle={subtitle} />
       <Card>
-        <CustomerOverviewTable rows={rows} />
+        <SearchableCustomerOverview rows={rows} />
       </Card>
     </div>
   );

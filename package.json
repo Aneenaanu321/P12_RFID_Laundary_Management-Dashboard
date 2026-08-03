@@ -5,12 +5,13 @@
   "scripts": {
     "dev": "next dev",
     "build": "next build",
-    "start": "tsx scripts/ensure-seed.ts && next start",
+    "start": "tsx scripts/ensure-demo-user.ts && next start",
     "lint": "eslint",
     "seed": "tsx scripts/seed.ts",
     "ensure-seed": "tsx scripts/ensure-seed.ts",
     "ensure-demo-user": "tsx scripts/ensure-demo-user.ts",
-
+    "test": "npm run test:unit && npm run test:e2e",
+    "test:unit": "tsx --test src/lib/format.test.ts src/lib/chart-utils.test.ts",
     "postinstall": "echo 'Run npm run seed to (re)generate demo data.'",
     "test:e2e": "playwright test",
     "test:e2e:ui": "playwright test --ui",

@@ -3,7 +3,6 @@ import { getItemByCode, getItemEvents } from "@/lib/queries";
 import { fmtAED, fmtDate, fmtDateTime, titleCase } from "@/lib/format";
 import { Card, CardHeader } from "@/components/ui/Card";
 import { StatusBadge } from "@/components/ui/StatusBadge";
-import { Button } from "@/components/ui/Button";
 import { ConfirmButton } from "@/components/ui/ConfirmButton";
 import { PageHeader } from "@/components/layout/PageHeader";
 import { Timeline } from "@/components/Timeline";
@@ -42,15 +41,33 @@ export default async function ItemDetailPage({ params }: { params: Promise<{ ite
         title={item.itemCode}
         subtitle={`RFID: ${item.epc}`}
         action={
-          <div className="flex gap-2">
+          <div className="flex flex-wrap gap-2">
             {item.missing ? (
-              <form action={markItemFound.bind(null, item.id, path)}>
-                <Button type="submit" variant="solidSuccess">Mark Found</Button>
-              </form>
+              <ConfirmButton
+                variant="solidSuccess"
+                confirmTitle="Mark as found?"
+                confirmDescription={`Clear the missing flag on ${item.itemCode} and return it to active tracking.`}
+                confirmLabel="Mark Found"
+                confirmVariant="primary"
+                formAction={markItemFound.bind(null, item.id, path)}
+                successTitle="Item marked as found"
+                successMessage={item.itemCode}
+              >
+                Mark Found
+              </ConfirmButton>
             ) : (
-              <form action={flagItem.bind(null, item.id, path)}>
-                <Button type="submit" variant="secondary">Flag</Button>
-              </form>
+              <ConfirmButton
+                variant="secondary"
+                confirmTitle="Flag for investigation?"
+                confirmDescription={`Flag ${item.itemCode} for follow-up. Operators will see it in alerts.`}
+                confirmLabel="Flag"
+                confirmVariant="primary"
+                formAction={flagItem.bind(null, item.id, path)}
+                successTitle="Flagged for investigation"
+                successMessage={item.itemCode}
+              >
+                Flag
+              </ConfirmButton>
             )}
             {!item.disposed && (
               <ConfirmButton
@@ -60,14 +77,25 @@ export default async function ItemDetailPage({ params }: { params: Promise<{ ite
                 confirmLabel="Mark Lost"
                 confirmVariant="danger"
                 formAction={markItemLost.bind(null, item.id, path)}
+                successTitle="Item marked as lost"
+                successMessage={item.itemCode}
               >
                 Mark Lost
               </ConfirmButton>
             )}
             {item.disposed && (
-              <form action={requestReplacement.bind(null, item.id, path)}>
-                <Button type="submit" variant="primary">Request Replacement</Button>
-              </form>
+              <ConfirmButton
+                variant="primary"
+                confirmTitle="Request replacement?"
+                confirmDescription={`Create a replacement request for ${item.itemCode}.`}
+                confirmLabel="Request Replacement"
+                confirmVariant="primary"
+                formAction={requestReplacement.bind(null, item.id, path)}
+                successTitle="Replacement requested"
+                successMessage={item.itemCode}
+              >
+                Request Replacement
+              </ConfirmButton>
             )}
           </div>
         }
@@ -79,7 +107,7 @@ export default async function ItemDetailPage({ params }: { params: Promise<{ ite
             <CardHeader title="Overview" />
             <div className="px-5 pb-5 grid grid-cols-2 sm:grid-cols-3 gap-4 text-sm">
               <Field label="Item Type" value={item.itemTypeName} />
-              <Field label="Customer" value={<Link href={`/customers/${item.customerId}`} className="text-blue-700 hover:underline">{item.customerName}</Link>} />
+              <Field label="Customer" value={<Link href={`/customers/${item.customerId}`} className="text-[var(--accent-600)] hover:underline">{item.customerName}</Link>} />
               <Field label="Location" value={item.locationName ?? "—"} />
               <Field label="Department" value={item.departmentName ?? "—"} />
               <Field label="Current Zone" value={titleCase(item.currentZone)} />

@@ -30,8 +30,8 @@ export async function SettlementSummaryWidget() {
         }
       />
       <div className="px-5 pb-5">
-        <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 mb-4">
-          <div className="rounded-xl border border-[var(--border-subtle)] bg-[var(--surface-muted)] p-3.5">
+        <div className="grid grid-cols-1 sm:grid-cols-3 gap-0 sm:gap-0 mb-4 divide-y sm:divide-y-0 sm:divide-x divide-[var(--border-subtle)] rounded-xl border border-[var(--border-subtle)] overflow-hidden">
+          <div className="bg-[var(--surface-muted)] p-3.5">
             <div className="flex items-center gap-2 text-[var(--status-amber)]">
               <Coins size={15} />
               <span className="text-[11px] font-medium uppercase tracking-wide">Loss value</span>
@@ -41,7 +41,7 @@ export async function SettlementSummaryWidget() {
               Loss analytics
             </Link>
           </div>
-          <div className="rounded-xl border border-[var(--border-subtle)] bg-[var(--surface-muted)] p-3.5">
+          <div className="bg-[var(--surface-muted)] p-3.5">
             <div className="flex items-center gap-2 text-[var(--status-blue)]">
               <Scale size={15} />
               <span className="text-[11px] font-medium uppercase tracking-wide">Open settlement $</span>
@@ -49,7 +49,7 @@ export async function SettlementSummaryWidget() {
             <p className="mt-1.5 text-xl font-semibold tabular-nums text-[var(--foreground)]">{fmtAED(totalOpen)}</p>
             <p className="text-[11px] text-[var(--muted)]">{fmtNumber(rows.length)} customers shown</p>
           </div>
-          <div className="rounded-xl border border-[var(--border-subtle)] bg-[var(--surface-muted)] p-3.5">
+          <div className="bg-[var(--surface-muted)] p-3.5">
             <div className="flex items-center gap-2 text-[var(--muted)]">
               <FileText size={15} />
               <span className="text-[11px] font-medium uppercase tracking-wide">Missing on bills</span>

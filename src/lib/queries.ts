@@ -299,10 +299,20 @@ export const getCustomers = cache((type?: string) => {
 });
 
 /** Paginated customer overview for the dashboard table. */
-export const getCustomersPage = cache((typeKey: string, page: number, pageSize: number) => {
+export const getCustomersPage = cache((typeKey: string, page: number, pageSize: number, search?: string) => {
   const type = typeKey === "__all__" ? undefined : typeKey;
-  const where = type ? `WHERE c.type = ?` : "";
-  const params = type ? [type] : [];
+  const clauses: string[] = [];
+  const params: (string | number)[] = [];
+  if (type) {
+    clauses.push("c.type = ?");
+    params.push(type);
+  }
+  const q = search?.trim();
+  if (q) {
+    clauses.push("(c.name LIKE ? OR c.code LIKE ?)");
+    params.push(`%${q}%`, `%${q}%`);
+  }
+  const where = clauses.length ? `WHERE ${clauses.join(" AND ")}` : "";
   const totalRow = get<{ c: number }>(
     `SELECT COUNT(*) as c FROM Customer c ${where}`,
     params
@@ -780,8 +790,9 @@ export function getUsers() {
 // Global search
 // ---------------------------------------------------------------------------
 export function globalSearch(term: string) {
-  if (!term || term.length < 2) return { items: [] as Item[], customers: [] as Customer[] };
-  const items = all<Item>(`${ITEM_SELECT} WHERE i.epc LIKE ? OR i.itemCode LIKE ? LIMIT 8`, [`%${term}%`, `%${term}%`]);
-  const customers = all<Customer>(`SELECT * FROM Customer WHERE name LIKE ? LIMIT 5`, [`%${term}%`]);
+  const q = term.trim();
+  if (!q) return { items: [] as Item[], customers: [] as Customer[] };
+  const items = all<Item>(`${ITEM_SELECT} WHERE i.epc LIKE ? OR i.itemCode LIKE ? LIMIT 8`, [`%${q}%`, `%${q}%`]);
+  const customers = all<Customer>(`SELECT * FROM Customer WHERE name LIKE ? LIMIT 5`, [`%${q}%`]);
   return { items, customers };
 }

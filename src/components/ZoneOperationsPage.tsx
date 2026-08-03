@@ -2,14 +2,43 @@ import { PageHeader } from "@/components/layout/PageHeader";
 import { Card, CardHeader } from "@/components/ui/Card";
 import { ItemsTable } from "@/components/ItemsTable";
 import { Pagination } from "@/components/ui/Pagination";
+import { TableFilters } from "@/components/TableFilters";
 import { KpiCard } from "@/components/KpiCard";
-import { getItemsPage } from "@/lib/queries";
+import { getItemsPage, getCustomers } from "@/lib/queries";
 import { fmtNumber } from "@/lib/format";
 
 export async function ZoneOperationsPage({
-  zone, title, subtitle, basePath, page,
-}: { zone: string; title: string; subtitle: string; basePath: string; page: number }) {
-  const { rows, total, pageCount } = getItemsPage({ currentZone: zone }, page, 20, "lastReadAt DESC");
+  zone,
+  title,
+  subtitle,
+  basePath,
+  page,
+  search,
+  customerId,
+  status,
+}: {
+  zone: string;
+  title: string;
+  subtitle: string;
+  basePath: string;
+  page: number;
+  search?: string;
+  customerId?: string;
+  status?: string;
+}) {
+  const { rows, total, pageCount } = getItemsPage(
+    { currentZone: zone, search, customerId, currentStatus: status },
+    page,
+    20,
+    "lastReadAt DESC"
+  );
+  const customers = getCustomers();
+
+  const params = new URLSearchParams();
+  if (search) params.set("q", search);
+  if (customerId) params.set("customerId", customerId);
+  if (status) params.set("status", status);
+  const qs = params.toString();
 
   return (
     <div>
@@ -39,8 +68,31 @@ export async function ZoneOperationsPage({
       </div>
       <Card>
         <CardHeader title={`Items — ${title}`} />
+        <TableFilters
+          searchPlaceholder="Search EPC or item code..."
+          exportResource="items"
+          exportFilename={`${zone.toLowerCase()}-items`}
+          exportParams={{ zone }}
+          filters={[
+            { key: "customerId", label: "All Customers", options: customers.map((c) => ({ value: c.id, label: c.name })) },
+            {
+              key: "status",
+              label: "All Statuses",
+              options: [
+                { value: "ACTIVE", label: "Active" },
+                { value: "IN_LAUNDRY", label: "In Laundry" },
+                { value: "READY", label: "Ready" },
+                { value: "MISSING", label: "Missing" },
+              ],
+            },
+          ]}
+        />
         <ItemsTable rows={rows} />
-        <Pagination page={page} pageCount={pageCount} buildHref={(p) => `${basePath}?page=${p}`} />
+        <Pagination
+          page={page}
+          pageCount={pageCount}
+          buildHref={(p) => `${basePath}?${qs}${qs ? "&" : ""}page=${p}`}
+        />
       </Card>
     </div>
   );

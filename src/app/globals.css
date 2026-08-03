@@ -98,6 +98,21 @@
   --auth-green-deep: #2f7a35;
   --auth-green-soft: rgba(63, 158, 69, 0.16);
   --auth-panel: #f3f7f4;
+
+  /* Sidebar — light surface to match app chrome */
+  --sidebar-bg: #ffffff;
+  --sidebar-fg: #334155;
+  --sidebar-muted: #64748b;
+  --sidebar-border: #e2e8f0;
+  --sidebar-hover: #f1f5f9;
+  --sidebar-active-bg: #f1f5f9;
+  --sidebar-active-fg: #0f172a;
+  --sidebar-accent: #0ea5a4;
+  --sidebar-footer-bg: #f8fafc;
+  --sidebar-avatar-from: #e2e8f0;
+  --sidebar-avatar-to: #cbd5e1;
+  --sidebar-shadow: 4px 0 24px -8px rgb(15 23 42 / 0.08);
+  --sidebar-scroll-thumb: rgb(148 163 184 / 0.45);
 }
 
 html.dark {
@@ -160,6 +175,29 @@ html.dark {
   --chart-tooltip-fg: #e2e8f0;
   --chart-cursor: #1e293b;
   --chart-marker: #f87171;
+
+  --auth-ink: #e2e8f0;
+  --auth-muted: #94a3b8;
+  --auth-border: #334155;
+  --auth-green: #4ade80;
+  --auth-green-deep: #86efac;
+  --auth-green-soft: rgba(74, 222, 128, 0.14);
+  --auth-panel: #111827;
+
+  /* Sidebar — dark navy rail */
+  --sidebar-bg: #060a12;
+  --sidebar-fg: #cbd5e1;
+  --sidebar-muted: #94a3b8;
+  --sidebar-border: rgb(255 255 255 / 0.08);
+  --sidebar-hover: rgb(255 255 255 / 0.05);
+  --sidebar-active-bg: rgb(255 255 255 / 0.1);
+  --sidebar-active-fg: #ffffff;
+  --sidebar-accent: #2dd4bf;
+  --sidebar-footer-bg: rgb(11 18 32 / 0.5);
+  --sidebar-avatar-from: #1a2740;
+  --sidebar-avatar-to: #111b2e;
+  --sidebar-shadow: 4px 0 24px -8px rgb(0 0 0 / 0.45);
+  --sidebar-scroll-thumb: rgb(148 163 184 / 0.35);
 }
 
 /* System preference when no explicit light/dark class yet (pre-hydration) */
@@ -224,6 +262,20 @@ html.dark {
     --chart-tooltip-fg: #e2e8f0;
     --chart-cursor: #1e293b;
     --chart-marker: #f87171;
+
+    --sidebar-bg: #060a12;
+    --sidebar-fg: #cbd5e1;
+    --sidebar-muted: #94a3b8;
+    --sidebar-border: rgb(255 255 255 / 0.08);
+    --sidebar-hover: rgb(255 255 255 / 0.05);
+    --sidebar-active-bg: rgb(255 255 255 / 0.1);
+    --sidebar-active-fg: #ffffff;
+    --sidebar-accent: #2dd4bf;
+    --sidebar-footer-bg: rgb(11 18 32 / 0.5);
+    --sidebar-avatar-from: #1a2740;
+    --sidebar-avatar-to: #111b2e;
+    --sidebar-shadow: 4px 0 24px -8px rgb(0 0 0 / 0.45);
+    --sidebar-scroll-thumb: rgb(148 163 184 / 0.35);
   }
 }
 
@@ -244,6 +296,20 @@ body {
 ::-webkit-scrollbar-track { background: transparent; }
 ::-webkit-scrollbar-thumb { background: var(--scrollbar); border-radius: 8px; }
 ::-webkit-scrollbar-thumb:hover { background: var(--scrollbar-hover); }
+
+/* Theme-aware sidebar scrollbar */
+.sidebar-scroll {
+  scrollbar-width: thin;
+  scrollbar-color: var(--sidebar-scroll-thumb) transparent;
+}
+.sidebar-scroll::-webkit-scrollbar { width: 5px; }
+.sidebar-scroll::-webkit-scrollbar-thumb {
+  background: var(--sidebar-scroll-thumb);
+  border-radius: 999px;
+}
+.sidebar-scroll::-webkit-scrollbar-thumb:hover {
+  background: var(--sidebar-muted);
+}
 
 @keyframes pulse-dot {
   0%, 100% { opacity: 1; }
@@ -442,10 +508,22 @@ body {
   }
 
   html, body {
-    background: #fff !important;
-    color: #0f172a !important;
     -webkit-print-color-adjust: exact;
     print-color-adjust: exact;
+  }
+
+  /* Light theme — paper-friendly white */
+  html.light,
+  html:not(.dark) {
+    background: #fff !important;
+    color: #0f172a !important;
+  }
+
+  /* Dark theme — match on-screen black theme in print preview */
+  html.dark,
+  html.dark body {
+    background: #0b1220 !important;
+    color: #e2e8f0 !important;
   }
 
   .no-print {
@@ -456,35 +534,37 @@ body {
     display: block !important;
     margin-bottom: 16px;
     padding-bottom: 12px;
-    border-bottom: 1px solid #cbd5e1;
+    border-bottom: 1px solid var(--border-subtle);
   }
   .print-only-header .print-only-brand {
     font-size: 11px;
     font-weight: 600;
     letter-spacing: 0.04em;
     text-transform: uppercase;
-    color: #64748b;
+    color: var(--muted);
     margin: 0 0 4px;
   }
   .print-only-header h1 {
     font-size: 18px;
     font-weight: 600;
     margin: 0 0 4px;
-    color: #0f172a;
+    color: var(--foreground);
   }
   .print-only-header p {
     font-size: 11px;
-    color: #64748b;
+    color: var(--muted);
     margin: 0;
   }
 
   .dashboard-print-root {
-    background: #fff !important;
+    background: transparent !important;
   }
 
-  /* Force light surfaces for readable paper output */
-  .dashboard-print-root,
-  .dashboard-print-root * {
+  /* Keep light surfaces when printing in light mode */
+  html.light .dashboard-print-root,
+  html.light .dashboard-print-root *,
+  html:not(.dark) .dashboard-print-root,
+  html:not(.dark) .dashboard-print-root * {
     --background: #ffffff;
     --foreground: #0f172a;
     --muted: #475569;
@@ -505,6 +585,29 @@ body {
     --status-gray-bg: #f1f5f9;
   }
 
+  /* Keep dark surfaces when printing in dark mode */
+  html.dark .dashboard-print-root,
+  html.dark .dashboard-print-root * {
+    --background: #0b1220;
+    --foreground: #e2e8f0;
+    --muted: #94a3b8;
+    --muted-fg: #64748b;
+    --surface-muted: #1e293b;
+    --surface-hover: #162033;
+    --border-subtle: #1e293b;
+    --card-bg: #111827;
+    --status-green: #4ade80;
+    --status-green-bg: rgba(74, 222, 128, 0.12);
+    --status-amber: #fbbf24;
+    --status-amber-bg: rgba(251, 191, 36, 0.12);
+    --status-red: #f87171;
+    --status-red-bg: rgba(248, 113, 113, 0.12);
+    --status-blue: #60a5fa;
+    --status-blue-bg: rgba(96, 165, 250, 0.12);
+    --status-gray: #94a3b8;
+    --status-gray-bg: rgba(148, 163, 184, 0.12);
+  }
+
   .dashboard-print-root [class*="shadow"] {
     box-shadow: none !important;
   }
@@ -516,9 +619,9 @@ body {
     transform: none !important;
   }
 
-  .dashboard-print-root #tour-kpis > div,
-  .dashboard-print-root #tour-process-flow,
-  .dashboard-print-root #tour-customers {
+  .dashboard-print-root #view-kpis > div,
+  .dashboard-print-root #view-process-flow,
+  .dashboard-print-root #view-customers {
     break-inside: avoid;
     page-break-inside: avoid;
   }
@@ -527,5 +630,3 @@ body {
 .print-only-header {
   display: none;
 }
-
-

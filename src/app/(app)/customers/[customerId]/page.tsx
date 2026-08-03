@@ -4,6 +4,7 @@ import { Card, CardHeader } from "@/components/ui/Card";
 import { KpiCard } from "@/components/KpiCard";
 import { ItemsTable } from "@/components/ItemsTable";
 import { Pagination } from "@/components/ui/Pagination";
+import { TableFilters } from "@/components/TableFilters";
 import { BarHorizontal } from "@/components/charts/Charts";
 import {
   getCustomerById, getCustomers, getCustomerDeptBreakdown, getItemsPage, getSettlementForCustomer,
@@ -16,10 +17,13 @@ import { TrackRecentView } from "@/components/TrackRecentView";
 
 export default async function CustomerDetailPage({
   params, searchParams,
-}: { params: Promise<{ customerId: string }>; searchParams: Promise<{ page?: string }> }) {
+}: {
+  params: Promise<{ customerId: string }>;
+  searchParams: Promise<{ page?: string; q?: string; status?: string }>;
+}) {
   const { customerId } = await params;
-  const { page: pageStr } = await searchParams;
-  const page = Number(pageStr ?? 1);
+  const sp = await searchParams;
+  const page = Number(sp.page ?? 1);
   const session = await getSession();
 
   const customer = getCustomerById(customerId);
@@ -27,8 +31,18 @@ export default async function CustomerDetailPage({
 
   const overview = getCustomers().find((c) => c.id === customerId)!;
   const depts = getCustomerDeptBreakdown(customerId);
-  const { rows, pageCount } = getItemsPage({ customerId }, page, 20, "lastReadAt DESC");
+  const { rows, pageCount } = getItemsPage(
+    { customerId, search: sp.q, currentStatus: sp.status },
+    page,
+    20,
+    "lastReadAt DESC"
+  );
   const settlement = getSettlementForCustomer(customerId);
+
+  const paramsQs = new URLSearchParams();
+  if (sp.q) paramsQs.set("q", sp.q);
+  if (sp.status) paramsQs.set("status", sp.status);
+  const qs = paramsQs.toString();
 
   return (
     <div>
@@ -153,8 +167,31 @@ export default async function CustomerDetailPage({
 
       <Card>
         <CardHeader title="Inventory" />
+        <TableFilters
+          searchPlaceholder="Search EPC or item code..."
+          exportResource="items"
+          exportFilename={`customer-${customerId}-inventory`}
+          exportParams={{ customerId }}
+          filters={[
+            {
+              key: "status",
+              label: "All Statuses",
+              options: [
+                { value: "ACTIVE", label: "Active" },
+                { value: "IN_LAUNDRY", label: "In Laundry" },
+                { value: "READY", label: "Ready" },
+                { value: "MISSING", label: "Missing" },
+                { value: "DISPOSED", label: "Disposed" },
+              ],
+            },
+          ]}
+        />
         <ItemsTable rows={rows} />
-        <Pagination page={page} pageCount={pageCount} buildHref={(p) => `/customers/${customerId}?page=${p}`} />
+        <Pagination
+          page={page}
+          pageCount={pageCount}
+          buildHref={(p) => `/customers/${customerId}?${qs}${qs ? "&" : ""}page=${p}`}
+        />
       </Card>
     </div>
   );

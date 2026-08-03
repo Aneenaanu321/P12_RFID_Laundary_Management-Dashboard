@@ -2,10 +2,11 @@
 
 import { useEffect, useRef, useState, useCallback } from "react";
 import { useRouter, usePathname, useSearchParams } from "next/navigation";
-import { Search, Bell, Loader2 } from "lucide-react";
+import { Search, Bell, Loader2, Menu } from "lucide-react";
 import Link from "next/link";
 import { ThemeToggle } from "@/components/theme/ThemeToggle";
 import { Input } from "@/components/ui/Input";
+import { Button } from "@/components/ui/Button";
 import { Dropdown, DropdownTrigger, DropdownMenu, DropdownItem, DropdownSeparator } from "@/components/ui/Dropdown";
 
 type SearchResult = {
@@ -48,10 +49,12 @@ export function AppHeader({
   alertCount,
   userName,
   userRole,
+  onMenuClick,
 }: {
   alertCount: number;
   userName?: string;
   userRole?: string;
+  onMenuClick?: () => void;
 }) {
   const router = useRouter();
   const pathname = usePathname();
@@ -85,7 +88,7 @@ export function AppHeader({
   ];
 
   useEffect(() => {
-    if (query.length < 2) {
+    if (query.length < 1) {
       setResults(null);
       setLoading(false);
       return;
@@ -101,7 +104,7 @@ export function AppHeader({
       } finally {
         setLoading(false);
       }
-    }, 200);
+    }, 120);
     return () => clearTimeout(t);
   }, [query]);
 
@@ -159,7 +162,7 @@ export function AppHeader({
 
   function onSearchKeyDown(e: React.KeyboardEvent<HTMLInputElement>) {
     const list =
-      query.length < 2
+      query.length < 1
         ? recent.map((q) => ({ key: q, label: q, href: null as string | null }))
         : flatResults.map((r) => ({ key: r.key, label: r.label, href: r.href as string | null }));
 
@@ -179,7 +182,7 @@ export function AppHeader({
           setQuery(item.label);
           setOpen(true);
         }
-      } else if (query.length >= 2 && flatResults[0]) {
+      } else if (query.length >= 1 && flatResults[0]) {
         goTo(flatResults[0].href, query);
       }
     } else if (e.key === "Escape") {
@@ -194,9 +197,9 @@ export function AppHeader({
     .join("")
     .toUpperCase();
 
-  const showRecent = open && query.length < 2 && recent.length > 0;
-  const showResults = open && query.length >= 2 && !loading && results;
-  const showEmpty = open && query.length >= 2 && !loading && results && flatResults.length === 0;
+  const showRecent = open && query.length < 1 && recent.length > 0;
+  const showResults = open && query.length >= 1 && !loading && results;
+  const showEmpty = open && query.length >= 1 && !loading && results && flatResults.length === 0;
 
   return (
     <header
@@ -204,7 +207,19 @@ export function AppHeader({
         condensed ? "h-12" : "h-14 sm:h-16"
       }`}
     >
-      <div ref={boxRef} className="relative flex-1 max-w-xl min-w-0">
+      {onMenuClick && (
+        <Button
+          type="button"
+          variant="ghost"
+          size="icon"
+          className="lg:hidden shrink-0"
+          onClick={onMenuClick}
+          aria-label="Open navigation menu"
+        >
+          <Menu size={20} aria-hidden />
+        </Button>
+      )}
+      <div ref={boxRef} className="relative flex-1 max-w-xs min-w-0">
         <Search
           size={condensed ? 14 : 16}
           className="absolute left-2.5 sm:left-3 top-1/2 -translate-y-1/2 text-[var(--muted-fg)]"

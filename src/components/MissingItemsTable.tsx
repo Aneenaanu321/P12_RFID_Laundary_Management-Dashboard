@@ -3,7 +3,6 @@
 import { useMemo } from "react";
 import { Item } from "@/lib/queries";
 import { EmptyState } from "@/components/ui/EmptyState";
-import { ActionToastButton } from "@/components/ui/ActionToastButton";
 import { ConfirmButton } from "@/components/ui/ConfirmButton";
 import { fmtAED, fmtDateTime, daysSince } from "@/lib/format";
 import { markItemFound, markItemLost, flagItem } from "@/lib/actions";
@@ -70,24 +69,32 @@ function MissingItemsTableInner({ rows, path }: { rows: Item[]; path: string }) 
             <DataTableCell className="tabular-nums text-[var(--foreground)]">{fmtAED(it.value)}</DataTableCell>
             <DataTableCell>
               <div className="flex justify-end gap-1.5">
-                <ActionToastButton
+                <ConfirmButton
                   variant="secondary"
                   size="sm"
+                  confirmTitle="Flag for investigation?"
+                  confirmDescription={`Flag ${it.itemCode} for follow-up. Operators will see it in alerts.`}
+                  confirmLabel="Investigate"
+                  confirmVariant="primary"
                   formAction={flagItem.bind(null, it.id, path)}
                   successTitle="Flagged for investigation"
                   successMessage={it.itemCode}
                 >
                   Investigate
-                </ActionToastButton>
-                <ActionToastButton
+                </ConfirmButton>
+                <ConfirmButton
                   variant="success"
                   size="sm"
+                  confirmTitle="Mark as found?"
+                  confirmDescription={`Clear the missing flag on ${it.itemCode} and return it to active tracking.`}
+                  confirmLabel="Mark Found"
+                  confirmVariant="primary"
                   formAction={markItemFound.bind(null, it.id, path)}
                   successTitle="Item marked as found"
                   successMessage={it.itemCode}
                 >
                   Mark Found
-                </ActionToastButton>
+                </ConfirmButton>
                 <ConfirmButton
                   variant="danger"
                   size="sm"

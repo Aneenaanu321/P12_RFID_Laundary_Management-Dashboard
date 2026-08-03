@@ -20,11 +20,13 @@ type CustomerStats = {
 export function PinnedCustomersWidget({ userId }: { userId: string }) {
   const [pins, setPins] = useState<PinnedCustomer[]>([]);
   const [stats, setStats] = useState<CustomerStats[]>([]);
-  const [loading, setLoading] = useState(true);
+  const [loading, setLoading] = useState(false);
+  const [ready, setReady] = useState(false);
 
   useEffect(() => {
     const stored = readPins(userId);
     setPins(stored);
+    setReady(true);
     if (!stored.length) {
       setStats([]);
       setLoading(false);
@@ -48,7 +50,7 @@ export function PinnedCustomersWidget({ userId }: { userId: string }) {
     return () => {
       cancelled = true;
     };
-  }, [userId, pins.length]);
+  }, [userId]);
 
   function unpin(id: string) {
     const next = pins.filter((p) => p.id !== id);
@@ -57,7 +59,8 @@ export function PinnedCustomersWidget({ userId }: { userId: string }) {
     setStats((prev) => prev.filter((c) => c.id !== id));
   }
 
-  if (!pins.length && !loading) return null;
+  // Avoid SSR/client empty loading card that leaves a large blank gap.
+  if (!ready || !pins.length) return null;
 
   return (
     <Card className="mb-6">
@@ -73,7 +76,7 @@ export function PinnedCustomersWidget({ userId }: { userId: string }) {
       <div className="px-5 pb-5">
         {loading ? (
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
-            {Array.from({ length: Math.min(pins.length || 2, 3) }).map((_, i) => (
+            {Array.from({ length: Math.min(pins.length, 3) }).map((_, i) => (
               <div key={i} className="h-24 rounded-xl border border-[var(--border-subtle)] bg-[var(--surface-muted)] animate-pulse" />
             ))}
           </div>

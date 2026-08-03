@@ -1,7 +1,6 @@
 import { Item } from "@/lib/queries";
 import { StatusBadge } from "@/components/ui/StatusBadge";
 import { EmptyState } from "@/components/ui/EmptyState";
-import { Button } from "@/components/ui/Button";
 import { ConfirmButton } from "@/components/ui/ConfirmButton";
 import { flagItem, approveDisposal, markItemDisposed, requestReplacement } from "@/lib/actions";
 import Link from "next/link";
@@ -13,7 +12,7 @@ export function LifecycleActionTable({ rows, path, showDisposeActions = true }: 
     <div className="overflow-x-auto">
       <table className="w-full text-sm">
         <thead>
-          <tr className="border-b border-slate-200 text-left text-xs text-slate-500 uppercase tracking-wider">
+          <tr className="border-b border-[var(--border-subtle)] text-left text-xs text-[var(--muted)] uppercase tracking-wider">
             <th className="px-5 py-3 font-medium">RFID / Item</th>
             <th className="px-3 py-3 font-medium">Customer</th>
             <th className="px-3 py-3 font-medium">Wash Cycles</th>
@@ -23,26 +22,36 @@ export function LifecycleActionTable({ rows, path, showDisposeActions = true }: 
             <th className="px-3 py-3 font-medium text-right">Actions</th>
           </tr>
         </thead>
-        <tbody className="divide-y divide-slate-100">
+        <tbody className="divide-y divide-[var(--border-subtle)]">
           {rows.map((it) => {
             const remaining = Math.max(0, it.maxWashCycles - it.washCycles);
             const critical = remaining <= (it.maxWashCycles * 0.05);
             return (
-              <tr key={it.id} className="hover:bg-slate-50">
+              <tr key={it.id} className="hover:bg-[var(--surface-hover)]">
                 <td className="px-5 py-3">
-                  <Link href={`/inventory/${it.itemCode}`} className="font-medium text-blue-700 hover:underline">{it.itemCode}</Link>
-                  <p className="text-xs text-slate-400">{it.itemTypeName}</p>
+                  <Link href={`/inventory/${it.itemCode}`} className="font-medium text-[var(--accent-600)] hover:underline">{it.itemCode}</Link>
+                  <p className="text-xs text-[var(--muted-fg)]">{it.itemTypeName}</p>
                 </td>
-                <td className="px-3 py-3 text-slate-600">{it.customerName}</td>
-                <td className="px-3 py-3 tabular-nums text-slate-700">{it.washCycles}</td>
-                <td className="px-3 py-3 tabular-nums text-slate-500">{it.maxWashCycles}</td>
-                <td className="px-3 py-3 tabular-nums text-slate-700">{remaining}</td>
+                <td className="px-3 py-3 text-[var(--muted)]">{it.customerName}</td>
+                <td className="px-3 py-3 tabular-nums text-[var(--foreground)]">{it.washCycles}</td>
+                <td className="px-3 py-3 tabular-nums text-[var(--muted)]">{it.maxWashCycles}</td>
+                <td className="px-3 py-3 tabular-nums text-[var(--foreground)]">{remaining}</td>
                 <td className="px-3 py-3"><StatusBadge status={critical ? "CRITICAL" : it.lifecycleStatus} label={critical ? "Critical" : undefined} /></td>
                 <td className="px-3 py-3">
                   <div className="flex justify-end gap-1.5 flex-wrap">
-                    <form action={flagItem.bind(null, it.id, path)}>
-                      <Button type="submit" variant="secondary" size="sm">Flag</Button>
-                    </form>
+                    <ConfirmButton
+                      variant="secondary"
+                      size="sm"
+                      confirmTitle="Flag for investigation?"
+                      confirmDescription={`Flag ${it.itemCode} for follow-up. Operators will see it in alerts.`}
+                      confirmLabel="Flag"
+                      confirmVariant="primary"
+                      formAction={flagItem.bind(null, it.id, path)}
+                      successTitle="Flagged for investigation"
+                      successMessage={it.itemCode}
+                    >
+                      Flag
+                    </ConfirmButton>
                     {showDisposeActions && it.lifecycleStatus !== "DISPOSAL_REQUIRED" && (
                       <ConfirmButton
                         variant="warning"
@@ -74,9 +83,19 @@ export function LifecycleActionTable({ rows, path, showDisposeActions = true }: 
                       </ConfirmButton>
                     )}
                     {it.disposed && (
-                      <form action={requestReplacement.bind(null, it.id, path)}>
-                        <Button type="submit" variant="primary" size="sm">Request Replacement</Button>
-                      </form>
+                      <ConfirmButton
+                        variant="primary"
+                        size="sm"
+                        confirmTitle="Request replacement?"
+                        confirmDescription={`Create a replacement request for ${it.itemCode}.`}
+                        confirmLabel="Request Replacement"
+                        confirmVariant="primary"
+                        formAction={requestReplacement.bind(null, it.id, path)}
+                        successTitle="Replacement requested"
+                        successMessage={it.itemCode}
+                      >
+                        Request Replacement
+                      </ConfirmButton>
                     )}
                   </div>
                 </td>

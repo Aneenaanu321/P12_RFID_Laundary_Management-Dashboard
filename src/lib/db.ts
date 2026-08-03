@@ -2,17 +2,13 @@ import { DatabaseSync } from "node:sqlite";
 import fs from "node:fs";
 import path from "node:path";
 
-// Node's built-in SQLite driver -- no native compilation, no network required.
-// This keeps the prototype runnable anywhere Node 22+ runs. The relational
-// model is identical to prisma/schema.prisma; swapping to real PostgreSQL +
-// Prisma Client in a networked environment is a drop-in change (see README).
+// Runtime store: Node built-in SQLite (Node 22+). Prisma/Postgres is the future swap.
 
 declare global {
   // eslint-disable-next-line no-var
   var __rfidDb: DatabaseSync | undefined;
 }
 
-/** Override with DATABASE_PATH (file) or DATA_DIR (directory) for Render disks. */
 function resolveDbPath() {
   if (process.env.DATABASE_PATH) return process.env.DATABASE_PATH;
   const dir = process.env.DATA_DIR || path.join(process.cwd(), "data");
@@ -49,9 +45,6 @@ export function isSeeded(): boolean {
   return row.c > 0;
 }
 
-// node:sqlite returns rows as null-prototype objects, which React Server
-// Components refuses to serialize across the client boundary. Normalize to
-// plain objects at the query boundary so callers never have to think about it.
 function toPlain<T>(row: unknown): T {
   return { ...(row as object) } as T;
 }
