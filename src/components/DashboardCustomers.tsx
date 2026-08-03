@@ -51,7 +51,7 @@ export async function DashboardCustomers({
         <EmptyState
           icon={Users}
           title="Welcome — no inventory yet"
-          subtitle="Register RFID items and customers to populate KPIs, trends, and this overview."
+          subtitle="Demo data is missing. Locally run npm run seed. On Render, wait for the first boot seed to finish (several minutes), then refresh."
         />
       </Card>
     );

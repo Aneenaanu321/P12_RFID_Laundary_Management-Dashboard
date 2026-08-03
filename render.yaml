@@ -13,7 +13,8 @@ services:
     region: oregon
     branch: main
     autoDeploy: true
-    # Seed during build (slow, ~minutes). Start also bootstraps demo admin if User table is empty.
+    # Seed at build. On start, ensure-seed re-creates inventory if the free-tier
+    # filesystem was wiped (first boot after sleep can take several minutes).
     buildCommand: npm ci && npm run seed && npm run build
     startCommand: npm run start
     healthCheckPath: /login

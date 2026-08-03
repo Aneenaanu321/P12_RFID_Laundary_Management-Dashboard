@@ -39,8 +39,12 @@ Demo login after seed:
 
 ### Persistent Disk (optional, paid)
 
-Free instances lose filesystem writes on redeploy. Seed-at-build still gives a
-full demo. For durable data:
+Free instances lose filesystem writes on redeploy / cold start. The start
+command runs `npm run ensure-seed`, which re-seeds inventory if `Item` is
+empty. That first boot after a wipe can take **several minutes** — wait for
+the deploy to become Live, then hard-refresh the dashboard.
+
+For durable data across restarts (skip re-seed on every wake):
 
 1. Add a disk mounted at `/var/data`
 2. Set `DATABASE_PATH=/var/data/app.db`

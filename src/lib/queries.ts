@@ -110,7 +110,11 @@ export function getSnapshotSeries(daysOrOpts: number | SnapshotSeriesOpts = 30) 
 
   const { days, from, to } = daysOrOpts;
   if (from && to) {
-    return getSnapshotByRange(from, to);
+    const ranged = getSnapshotByRange(from, to);
+    // Seed DBs can lag calendar "today" — fall back to the latest N snapshots
+    // so trend charts stay populated instead of rendering empty.
+    if (ranged.length > 0) return ranged;
+    return getSnapshotByDays(days ?? 30);
   }
 
   return getSnapshotByDays(days ?? 30);
