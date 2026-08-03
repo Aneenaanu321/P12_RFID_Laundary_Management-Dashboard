@@ -1,0 +1,28 @@
+# Render Blueprint — RFID Linen Management
+# https://render.com/docs/blueprint-spec
+#
+# SQLite is seeded during build and baked into the deploy image.
+# For durable writes across redeploys, attach a paid Persistent Disk
+# and set DATABASE_PATH=/var/data/app.db (see docs/DEPLOY.md).
+
+services:
+  - type: web
+    name: rfid-linen-management
+    runtime: node
+    plan: free
+    region: oregon
+    branch: main
+    autoDeploy: true
+    buildCommand: npm ci && npm run seed && npm run build
+    startCommand: npm run start
+    healthCheckPath: /login
+    envVars:
+      - key: NODE_VERSION
+        value: "22.14.0"
+      - key: JWT_SECRET
+        generateValue: true
+      - key: NODE_ENV
+        value: production
+      # Optional: uncomment when using a Persistent Disk mounted at /var/data
+      # - key: DATABASE_PATH
+      #   value: /var/data/app.db

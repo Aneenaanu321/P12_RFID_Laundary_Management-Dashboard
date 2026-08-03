@@ -14,11 +14,11 @@ export default function Page() {
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         <Card>
           <CardHeader title="Customer Inventory" subtitle="Total inventory value by customer" />
-          <div className="px-3 pb-3"><BarHorizontal data={value} dataKey="v" nameKey="customerName" color="#2563eb" /></div>
+          <div className="px-3 pb-3"><BarHorizontal data={value} dataKey="v" nameKey="customerName" color="var(--status-blue)" /></div>
         </Card>
         <Card>
           <CardHeader title="Customer Loss Comparison" />
-          <div className="px-3 pb-3"><BarHorizontal data={missing} dataKey="c" nameKey="customerName" color="#dc2626" /></div>
+          <div className="px-3 pb-3"><BarHorizontal data={missing} dataKey="c" nameKey="customerName" color="var(--status-red)" /></div>
         </Card>
         <Card className="lg:col-span-2">
           <CardHeader title="Average Wash Cycles by Customer" />

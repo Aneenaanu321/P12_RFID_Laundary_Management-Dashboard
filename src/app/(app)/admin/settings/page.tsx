@@ -1,5 +1,6 @@
 import { PageHeader } from "@/components/layout/PageHeader";
 import { Card, CardHeader } from "@/components/ui/Card";
+import { Input } from "@/components/ui/Input";
 
 export default function Page() {
   return (
@@ -11,15 +12,15 @@ export default function Page() {
           <div className="px-5 pb-5 space-y-3 text-sm">
             <label className="block">
               <span className="text-xs text-slate-500">Organization Name</span>
-              <input defaultValue="RFID Linen Management" className="mt-1 w-full px-3 py-2 rounded-lg border border-slate-200" />
+              <Input defaultValue="RFID Linen Management" className="mt-1 py-2" />
             </label>
             <label className="block">
               <span className="text-xs text-slate-500">Default Currency</span>
-              <input defaultValue="AED" className="mt-1 w-full px-3 py-2 rounded-lg border border-slate-200" />
+              <Input defaultValue="AED" className="mt-1 py-2" />
             </label>
             <label className="block">
               <span className="text-xs text-slate-500">Missing Item Threshold (days)</span>
-              <input defaultValue={2} type="number" className="mt-1 w-full px-3 py-2 rounded-lg border border-slate-200" />
+              <Input defaultValue={2} type="number" className="mt-1 py-2" />
             </label>
           </div>
         </Card>

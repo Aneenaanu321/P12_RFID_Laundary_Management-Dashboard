@@ -24,7 +24,7 @@ type ChartTheme = {
 };
 
 const FALLBACK_THEME: ChartTheme = {
-  palette: ["#2563eb", "#0ea5a4", "#d97706", "#dc2626", "#7c3aed", "#16a34a", "#64748b", "#0891b2", "#be185d"],
+  palette: ["#2563eb", "#0ea5a4", "#b45309", "#b91c1c", "#7c3aed", "#15803d", "#475569", "#0891b2", "#be185d"],
   grid: "#f1f5f9",
   tick: "#94a3b8",
   axis: "#475569",
@@ -32,7 +32,7 @@ const FALLBACK_THEME: ChartTheme = {
   tooltipBorder: "#e2e8f0",
   tooltipFg: "#0f172a",
   cursor: "#f8fafc",
-  marker: "#dc2626",
+  marker: "#b91c1c",
 };
 
 function cssVar(name: string, fallback: string) {
@@ -174,33 +174,58 @@ async function exportPng(container: HTMLElement | null, filename: string) {
 export function ChartShell({
   data,
   filename,
+  ariaLabel,
   children,
 }: {
   data: Record<string, unknown>[];
   filename: string;
+  ariaLabel?: string;
   children: ReactNode;
 }) {
   const ref = useRef<HTMLDivElement>(null);
+  const label = ariaLabel ?? `${filename.replace(/[-_]/g, " ")} chart`;
 
   return (
-    <div ref={ref} className="group/chart relative">
+    <div
+      ref={ref}
+      className="group/chart relative"
+      role="img"
+      aria-label={label}
+    >
       <div className="absolute right-1 top-0 z-10 flex gap-1 opacity-0 transition-opacity group-hover/chart:opacity-100 focus-within:opacity-100">
         <button
           type="button"
           onClick={() => exportCsv(data, filename)}
-          className="flex items-center gap-1 rounded-lg border border-slate-200 bg-white px-2 py-1 text-[11px] font-medium text-slate-600 shadow-sm hover:bg-slate-50"
+          aria-label={`Export ${label} as CSV`}
+          className="flex items-center gap-1 rounded-lg border border-[var(--border-subtle)] bg-[var(--card-bg)] px-2 py-1 text-[11px] font-medium text-[var(--muted)] shadow-sm hover:bg-[var(--surface-muted)] a11y-focus"
         >
-          <Download size={11} /> CSV
+          <Download size={11} aria-hidden /> CSV
         </button>
         <button
           type="button"
           onClick={() => exportPng(ref.current, filename)}
-          className="flex items-center gap-1 rounded-lg border border-slate-200 bg-white px-2 py-1 text-[11px] font-medium text-slate-600 shadow-sm hover:bg-slate-50"
+          aria-label={`Export ${label} as PNG`}
+          className="flex items-center gap-1 rounded-lg border border-[var(--border-subtle)] bg-[var(--card-bg)] px-2 py-1 text-[11px] font-medium text-[var(--muted)] shadow-sm hover:bg-[var(--surface-muted)] a11y-focus"
         >
-          <Download size={11} /> PNG
+          <Download size={11} aria-hidden /> PNG
         </button>
       </div>
-      {children}
+      <div aria-hidden>{children}</div>
+    </div>
+  );
+}
+
+function ChartFrame({
+  ariaLabel,
+  children,
+}: {
+  ariaLabel?: string;
+  children: ReactNode;
+}) {
+  if (!ariaLabel) return <>{children}</>;
+  return (
+    <div role="img" aria-label={ariaLabel}>
+      <div aria-hidden>{children}</div>
     </div>
   );
 }
@@ -244,6 +269,8 @@ export function TrendAreaChart({
   data, dataKey, xKey = "date", color, height = 220,
   compareKey, compareName = "Previous period", markers, filename,
   tone = "primary",
+  forecastKey, forecastName = "Forecast",
+  ariaLabel,
 }: {
   data: Record<string, unknown>[];
   dataKey: string;
@@ -256,11 +283,15 @@ export function TrendAreaChart({
   filename?: string;
   /** Theme palette slot when `color` is omitted. */
   tone?: "primary" | "teal" | "amber" | "danger" | "purple" | "green";
+  forecastKey?: string;
+  forecastName?: string;
+  ariaLabel?: string;
 }) {
   const theme = useChartTheme();
   const toneIndex = { primary: 0, teal: 1, amber: 2, danger: 3, purple: 4, green: 5 }[tone];
   const stroke = resolveColorToken(color, theme.palette[toneIndex]);
   const tooltipStyle = useTooltipStyle(theme);
+  const label = ariaLabel ?? `${dataKey} trend chart`;
   const chart = (
     <ResponsiveContainer width="100%" height={height}>
       <AreaChart data={data} margin={{ top: markers?.length ? 18 : 5, right: 10, left: -10, bottom: 0 }}>
@@ -288,24 +319,51 @@ export function TrendAreaChart({
             connectNulls
           />
         )}
-        <Area type="monotone" dataKey={dataKey} stroke={stroke} strokeWidth={2} fill={`url(#grad-${dataKey})`} />
+        <Area
+          type="monotone"
+          dataKey={dataKey}
+          stroke={stroke}
+          strokeWidth={2}
+          fill={`url(#grad-${dataKey})`}
+          connectNulls={false}
+        />
+        {forecastKey && (
+          <Area
+            type="monotone"
+            dataKey={forecastKey}
+            name={forecastName}
+            stroke={stroke}
+            strokeWidth={2}
+            strokeOpacity={0.7}
+            fill="transparent"
+            strokeDasharray="6 4"
+            dot={false}
+            connectNulls
+          />
+        )}
         <MarkerDots markers={markers} color={theme.marker} />
       </AreaChart>
     </ResponsiveContainer>
   );
 
-  return filename ? <ChartShell data={data} filename={filename}>{chart}</ChartShell> : chart;
+  return filename ? (
+    <ChartShell data={data} filename={filename} ariaLabel={label}>{chart}</ChartShell>
+  ) : (
+    <ChartFrame ariaLabel={label}>{chart}</ChartFrame>
+  );
 }
 
-export function MultiLineChart({ data, lines, xKey = "date", height = 240, filename }: {
+export function MultiLineChart({ data, lines, xKey = "date", height = 240, filename, ariaLabel }: {
   data: Record<string, unknown>[];
   lines: { key: string; color?: string; name?: string }[];
   xKey?: string;
   height?: number;
   filename?: string;
+  ariaLabel?: string;
 }) {
   const theme = useChartTheme();
   const tooltipStyle = useTooltipStyle(theme);
+  const label = ariaLabel ?? "Multi-series line chart";
   const chart = (
     <ResponsiveContainer width="100%" height={height}>
       <LineChart data={data} margin={{ top: 5, right: 10, left: -10, bottom: 0 }}>
@@ -320,7 +378,7 @@ export function MultiLineChart({ data, lines, xKey = "date", height = 240, filen
             type="monotone"
             dataKey={l.key}
             name={l.name ?? l.key}
-            stroke={l.color ?? theme.palette[i % theme.palette.length]}
+            stroke={resolveColorToken(l.color, theme.palette[i % theme.palette.length])}
             strokeWidth={2}
             dot={false}
           />
@@ -329,10 +387,14 @@ export function MultiLineChart({ data, lines, xKey = "date", height = 240, filen
     </ResponsiveContainer>
   );
 
-  return filename ? <ChartShell data={data} filename={filename}>{chart}</ChartShell> : chart;
+  return filename ? (
+    <ChartShell data={data} filename={filename} ariaLabel={label}>{chart}</ChartShell>
+  ) : (
+    <ChartFrame ariaLabel={label}>{chart}</ChartFrame>
+  );
 }
 
-export function BarHorizontal({ data, dataKey, nameKey, color, height = 260, filename, tone = "primary" }: {
+export function BarHorizontal({ data, dataKey, nameKey, color, height = 260, filename, tone = "primary", ariaLabel }: {
   data: Record<string, unknown>[];
   dataKey: string;
   nameKey: string;
@@ -340,11 +402,13 @@ export function BarHorizontal({ data, dataKey, nameKey, color, height = 260, fil
   height?: number;
   filename?: string;
   tone?: "primary" | "teal" | "amber" | "danger" | "purple" | "green";
+  ariaLabel?: string;
 }) {
   const theme = useChartTheme();
   const toneIndex = { primary: 0, teal: 1, amber: 2, danger: 3, purple: 4, green: 5 }[tone];
-  const fill = color ?? theme.palette[toneIndex];
+  const fill = resolveColorToken(color, theme.palette[toneIndex]);
   const tooltipStyle = useTooltipStyle(theme);
+  const label = ariaLabel ?? `${dataKey} by ${nameKey} bar chart`;
   const chart = (
     <ResponsiveContainer width="100%" height={height}>
       <BarChart data={data} layout="vertical" margin={{ top: 5, right: 20, left: 0, bottom: 0 }}>
@@ -357,15 +421,20 @@ export function BarHorizontal({ data, dataKey, nameKey, color, height = 260, fil
     </ResponsiveContainer>
   );
 
-  return filename ? <ChartShell data={data} filename={filename}>{chart}</ChartShell> : chart;
+  return filename ? (
+    <ChartShell data={data} filename={filename} ariaLabel={label}>{chart}</ChartShell>
+  ) : (
+    <ChartFrame ariaLabel={label}>{chart}</ChartFrame>
+  );
 }
 
-export function BarVertical({ data, dataKey, nameKey, color, height = 260, filename }: {
-  data: Record<string, unknown>[]; dataKey: string; nameKey: string; color?: string; height?: number; filename?: string;
+export function BarVertical({ data, dataKey, nameKey, color, height = 260, filename, ariaLabel }: {
+  data: Record<string, unknown>[]; dataKey: string; nameKey: string; color?: string; height?: number; filename?: string; ariaLabel?: string;
 }) {
   const theme = useChartTheme();
-  const fill = color ?? theme.palette[0];
+  const fill = resolveColorToken(color, theme.palette[0]);
   const tooltipStyle = useTooltipStyle(theme);
+  const label = ariaLabel ?? `${dataKey} by ${nameKey} bar chart`;
   const chart = (
     <ResponsiveContainer width="100%" height={height}>
       <BarChart data={data} margin={{ top: 5, right: 10, left: -10, bottom: 0 }}>
@@ -378,14 +447,19 @@ export function BarVertical({ data, dataKey, nameKey, color, height = 260, filen
     </ResponsiveContainer>
   );
 
-  return filename ? <ChartShell data={data} filename={filename}>{chart}</ChartShell> : chart;
+  return filename ? (
+    <ChartShell data={data} filename={filename} ariaLabel={label}>{chart}</ChartShell>
+  ) : (
+    <ChartFrame ariaLabel={label}>{chart}</ChartFrame>
+  );
 }
 
-export function DonutChart({ data, dataKey, nameKey, height = 240, filename }: {
-  data: Record<string, unknown>[]; dataKey: string; nameKey: string; height?: number; filename?: string;
+export function DonutChart({ data, dataKey, nameKey, height = 240, filename, ariaLabel }: {
+  data: Record<string, unknown>[]; dataKey: string; nameKey: string; height?: number; filename?: string; ariaLabel?: string;
 }) {
   const theme = useChartTheme();
   const tooltipStyle = useTooltipStyle(theme);
+  const label = ariaLabel ?? `${dataKey} distribution chart`;
   const resolveColor = (raw: unknown, i: number) => {
     if (typeof raw !== "string" || !raw) return theme.palette[i % theme.palette.length];
     if (raw.startsWith("var(")) {
@@ -408,7 +482,11 @@ export function DonutChart({ data, dataKey, nameKey, height = 240, filename }: {
     </ResponsiveContainer>
   );
 
-  return filename ? <ChartShell data={data} filename={filename}>{chart}</ChartShell> : chart;
+  return filename ? (
+    <ChartShell data={data} filename={filename} ariaLabel={label}>{chart}</ChartShell>
+  ) : (
+    <ChartFrame ariaLabel={label}>{chart}</ChartFrame>
+  );
 }
 
 export function Sparkline({
@@ -426,27 +504,29 @@ export function Sparkline({
 }) {
   const theme = useChartTheme();
   const stroke = resolveColorToken(color, theme.palette[0]);
-  if (!data.length) return <div style={{ height }} className="w-full" />;
+  if (!data.length) return <div style={{ height }} className="w-full" aria-hidden />;
   const gradId = `grad-${id}`;
   return (
-    <ResponsiveContainer width="100%" height={height}>
-      <AreaChart data={data} margin={{ top: 4, right: 0, left: 0, bottom: 0 }}>
-        <defs>
-          <linearGradient id={gradId} x1="0" y1="0" x2="0" y2="1">
-            <stop offset="5%" stopColor={stroke} stopOpacity={0.3} />
-            <stop offset="95%" stopColor={stroke} stopOpacity={0} />
-          </linearGradient>
-        </defs>
-        <Area
-          type="monotone"
-          dataKey={dataKey}
-          stroke={stroke}
-          strokeWidth={1.5}
-          fill={`url(#${gradId})`}
-          dot={false}
-          isAnimationActive={false}
-        />
-      </AreaChart>
-    </ResponsiveContainer>
+    <div aria-hidden>
+      <ResponsiveContainer width="100%" height={height}>
+        <AreaChart data={data} margin={{ top: 4, right: 0, left: 0, bottom: 0 }}>
+          <defs>
+            <linearGradient id={gradId} x1="0" y1="0" x2="0" y2="1">
+              <stop offset="5%" stopColor={stroke} stopOpacity={0.3} />
+              <stop offset="95%" stopColor={stroke} stopOpacity={0} />
+            </linearGradient>
+          </defs>
+          <Area
+            type="monotone"
+            dataKey={dataKey}
+            stroke={stroke}
+            strokeWidth={1.5}
+            fill={`url(#${gradId})`}
+            dot={false}
+            isAnimationActive={false}
+          />
+        </AreaChart>
+      </ResponsiveContainer>
+    </div>
   );
 }

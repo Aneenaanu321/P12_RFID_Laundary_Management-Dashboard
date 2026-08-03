@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import Link from "next/link";
 import { StatusBadge } from "@/components/ui/StatusBadge";
 import { titleCase } from "@/lib/format";
@@ -10,33 +10,88 @@ type LiveEvent = {
   zone: string; eventType: string; readerCode: string; timestamp: string;
 };
 
+type ConnState = "connecting" | "live" | "error";
+
 export function LiveFeed({ initial }: { initial: LiveEvent[] }) {
   const [events, setEvents] = useState<LiveEvent[]>(initial);
-  const [connected, setConnected] = useState(false);
+  const [status, setStatus] = useState<ConnState>("connecting");
   const esRef = useRef<EventSource | null>(null);
+  const [retryKey, setRetryKey] = useState(0);
 
-  useEffect(() => {
-    const es = new EventSource("/api/rfid/stream");
-    esRef.current = es;
-    es.onopen = () => setConnected(true);
-    es.onerror = () => setConnected(false);
-    es.onmessage = (e) => {
-      const parsed: LiveEvent = JSON.parse(e.data);
-      setEvents((prev) => [parsed, ...prev].slice(0, 60));
-    };
-    return () => es.close();
+  const disconnect = useCallback(() => {
+    esRef.current?.close();
+    esRef.current = null;
   }, []);
 
+  useEffect(() => {
+    setStatus("connecting");
+    const es = new EventSource("/api/rfid/stream");
+    esRef.current = es;
+
+    es.onopen = () => setStatus("live");
+    es.onerror = () => {
+      setStatus("error");
+      es.close();
+    };
+    es.onmessage = (e) => {
+      const parsed = JSON.parse(e.data) as LiveEvent & { itemCode?: string };
+      if (!parsed?.itemCode) return;
+      setEvents((prev) => [parsed, ...prev].slice(0, 60));
+    };
+
+    return () => {
+      es.close();
+      if (esRef.current === es) esRef.current = null;
+    };
+  }, [retryKey]);
+
+  function retry() {
+    disconnect();
+    setRetryKey((k) => k + 1);
+  }
+
+  const statusCopy =
+    status === "live"
+      ? "Live — streaming RFID reads"
+      : status === "error"
+        ? "Connection lost — stream unavailable"
+        : "Connecting...";
+
   return (
-    <div>
-      <div className="flex items-center gap-2 px-5 py-3 border-b border-slate-200 bg-slate-50/60">
-        <span className={`h-2 w-2 rounded-full ${connected ? "bg-green-500 live-dot" : "bg-slate-300"}`} />
-        <span className="text-xs font-medium text-slate-600">{connected ? "Live — streaming RFID reads" : "Connecting..."}</span>
+    <div data-testid="live-feed">
+      <div
+        className="flex items-center gap-2 px-5 py-3 border-b border-[var(--border-subtle)] bg-[var(--surface-muted)]/60"
+        data-testid="sse-status"
+        data-sse-state={status}
+        role="status"
+        aria-live="polite"
+      >
+        <span
+          className={`h-2 w-2 rounded-full ${
+            status === "live"
+              ? "bg-[var(--status-green)] live-dot"
+              : status === "error"
+                ? "bg-[var(--status-red)]"
+                : "bg-[var(--muted-fg)]"
+          }`}
+          aria-hidden
+        />
+        <span className="text-xs font-medium text-[var(--muted)]">{statusCopy}</span>
+        {status === "error" && (
+          <button
+            type="button"
+            onClick={retry}
+            className="ml-auto text-xs font-medium text-[var(--status-blue)] hover:underline a11y-focus rounded"
+            data-testid="sse-retry"
+          >
+            Retry connection
+          </button>
+        )}
       </div>
       <div className="overflow-x-auto max-h-[560px] overflow-y-auto">
-        <table className="w-full text-sm">
-          <thead className="sticky top-0 bg-white z-10">
-            <tr className="border-b border-slate-200 text-left text-xs text-slate-500 uppercase tracking-wider">
+        <table className="w-full text-sm" data-testid="live-feed-table">
+          <thead className="sticky top-0 bg-[var(--card-bg)] z-10">
+            <tr className="border-b border-[var(--border-subtle)] text-left text-xs text-[var(--muted)] uppercase tracking-wider">
               <th className="px-5 py-3 font-medium">Time</th>
               <th className="px-3 py-3 font-medium">Item</th>
               <th className="px-3 py-3 font-medium">Type</th>
@@ -47,19 +102,19 @@ export function LiveFeed({ initial }: { initial: LiveEvent[] }) {
               <th className="px-3 py-3 font-medium">Status</th>
             </tr>
           </thead>
-          <tbody className="divide-y divide-slate-100">
+          <tbody className="divide-y divide-[var(--border-subtle)]">
             {events.map((e, i) => (
-              <tr key={`${e.id}-${i}`} className={i === 0 ? "bg-blue-50/50" : "hover:bg-slate-50"}>
-                <td className="px-5 py-2.5 text-slate-500 tabular-nums whitespace-nowrap">
+              <tr key={`${e.id}-${i}`} className={i === 0 ? "bg-[var(--status-blue-bg)]/50" : "hover:bg-[var(--surface-hover)]"}>
+                <td className="px-5 py-2.5 text-[var(--muted)] tabular-nums whitespace-nowrap">
                   {new Date(e.timestamp).toLocaleTimeString("en-US", { hour: "2-digit", minute: "2-digit", second: "2-digit" })}
                 </td>
                 <td className="px-3 py-2.5">
-                  <Link href={`/inventory/${e.itemCode}`} className="text-blue-700 hover:underline font-medium">{e.itemCode}</Link>
+                  <Link href={`/inventory/${e.itemCode}`} className="text-[var(--status-blue)] hover:underline font-medium">{e.itemCode}</Link>
                 </td>
-                <td className="px-3 py-2.5 text-slate-600">{e.itemTypeName}</td>
-                <td className="px-3 py-2.5 text-slate-600">{e.customerName}</td>
-                <td className="px-3 py-2.5 text-slate-500">{titleCase(e.zone)}</td>
-                <td className="px-3 py-2.5 text-slate-500">{e.readerCode}</td>
+                <td className="px-3 py-2.5 text-[var(--muted)]">{e.itemTypeName}</td>
+                <td className="px-3 py-2.5 text-[var(--muted)]">{e.customerName}</td>
+                <td className="px-3 py-2.5 text-[var(--muted)]">{titleCase(e.zone)}</td>
+                <td className="px-3 py-2.5 text-[var(--muted)]">{e.readerCode}</td>
                 <td className="px-3 py-2.5"><StatusBadge status={e.eventType} label={titleCase(e.eventType)} /></td>
                 <td className="px-3 py-2.5"><StatusBadge status="ACTIVE" label="Active" /></td>
               </tr>

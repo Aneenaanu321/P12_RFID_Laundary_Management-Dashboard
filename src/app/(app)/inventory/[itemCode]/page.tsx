@@ -3,16 +3,21 @@ import { getItemByCode, getItemEvents } from "@/lib/queries";
 import { fmtAED, fmtDate, fmtDateTime, titleCase } from "@/lib/format";
 import { Card, CardHeader } from "@/components/ui/Card";
 import { StatusBadge } from "@/components/ui/StatusBadge";
+import { Button } from "@/components/ui/Button";
+import { ConfirmButton } from "@/components/ui/ConfirmButton";
 import { PageHeader } from "@/components/layout/PageHeader";
 import { Timeline } from "@/components/Timeline";
 import { markItemFound, markItemLost, flagItem, requestReplacement } from "@/lib/actions";
 import Link from "next/link";
+import { getSession } from "@/lib/auth";
+import { TrackRecentView } from "@/components/TrackRecentView";
 
 export default async function ItemDetailPage({ params }: { params: Promise<{ itemCode: string }> }) {
   const { itemCode } = await params;
   const item = getItemByCode(itemCode);
   if (!item) notFound();
 
+  const session = await getSession();
   const events = getItemEvents(item.id);
   const path = `/inventory/${itemCode}`;
   const pct = Math.min(100, (item.washCycles / item.maxWashCycles) * 100);
@@ -20,6 +25,18 @@ export default async function ItemDetailPage({ params }: { params: Promise<{ ite
 
   return (
     <div>
+      {session && (
+        <TrackRecentView
+          userId={session.id}
+          view={{
+            kind: "item",
+            id: item.itemCode,
+            label: item.itemCode,
+            href: path,
+            sub: `${item.itemTypeName} · ${item.customerName}`,
+          }}
+        />
+      )}
       <PageHeader
         breadcrumb={`Inventory / ${item.itemTypeName}`}
         title={item.itemCode}
@@ -28,21 +45,28 @@ export default async function ItemDetailPage({ params }: { params: Promise<{ ite
           <div className="flex gap-2">
             {item.missing ? (
               <form action={markItemFound.bind(null, item.id, path)}>
-                <button className="px-3 py-1.5 text-sm font-medium rounded-lg bg-green-600 text-white hover:bg-green-700">Mark Found</button>
+                <Button type="submit" variant="solidSuccess">Mark Found</Button>
               </form>
             ) : (
               <form action={flagItem.bind(null, item.id, path)}>
-                <button className="px-3 py-1.5 text-sm font-medium rounded-lg border border-slate-200 text-slate-600 hover:bg-slate-50">Flag</button>
+                <Button type="submit" variant="secondary">Flag</Button>
               </form>
             )}
             {!item.disposed && (
-              <form action={markItemLost.bind(null, item.id, path)}>
-                <button className="px-3 py-1.5 text-sm font-medium rounded-lg border border-red-200 text-red-600 hover:bg-red-50">Mark Lost</button>
-              </form>
+              <ConfirmButton
+                variant="danger"
+                confirmTitle="Mark as lost?"
+                confirmDescription={`Permanently mark ${item.itemCode} as lost. This affects loss analytics and settlements.`}
+                confirmLabel="Mark Lost"
+                confirmVariant="danger"
+                formAction={markItemLost.bind(null, item.id, path)}
+              >
+                Mark Lost
+              </ConfirmButton>
             )}
             {item.disposed && (
               <form action={requestReplacement.bind(null, item.id, path)}>
-                <button className="px-3 py-1.5 text-sm font-medium rounded-lg bg-blue-600 text-white hover:bg-blue-700">Request Replacement</button>
+                <Button type="submit" variant="primary">Request Replacement</Button>
               </form>
             )}
           </div>

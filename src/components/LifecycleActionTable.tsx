@@ -1,6 +1,8 @@
 import { Item } from "@/lib/queries";
 import { StatusBadge } from "@/components/ui/StatusBadge";
 import { EmptyState } from "@/components/ui/EmptyState";
+import { Button } from "@/components/ui/Button";
+import { ConfirmButton } from "@/components/ui/ConfirmButton";
 import { flagItem, approveDisposal, markItemDisposed, requestReplacement } from "@/lib/actions";
 import Link from "next/link";
 
@@ -39,21 +41,41 @@ export function LifecycleActionTable({ rows, path, showDisposeActions = true }: 
                 <td className="px-3 py-3">
                   <div className="flex justify-end gap-1.5 flex-wrap">
                     <form action={flagItem.bind(null, it.id, path)}>
-                      <button className="px-2 py-1 text-xs rounded-md border border-slate-200 text-slate-600 hover:bg-slate-50">Flag</button>
+                      <Button type="submit" variant="secondary" size="sm">Flag</Button>
                     </form>
                     {showDisposeActions && it.lifecycleStatus !== "DISPOSAL_REQUIRED" && (
-                      <form action={approveDisposal.bind(null, it.id, path)}>
-                        <button className="px-2 py-1 text-xs rounded-md border border-amber-200 text-amber-700 hover:bg-amber-50">Approve Disposal</button>
-                      </form>
+                      <ConfirmButton
+                        variant="warning"
+                        size="sm"
+                        confirmTitle="Approve disposal?"
+                        confirmDescription={`Mark ${it.itemCode} as approved for disposal. This cannot be easily undone.`}
+                        confirmLabel="Approve Disposal"
+                        confirmVariant="warning"
+                        formAction={approveDisposal.bind(null, it.id, path)}
+                        successTitle="Disposal approved"
+                        successMessage={it.itemCode}
+                      >
+                        Approve Disposal
+                      </ConfirmButton>
                     )}
                     {showDisposeActions && !it.disposed && (
-                      <form action={markItemDisposed.bind(null, it.id, path)}>
-                        <button className="px-2 py-1 text-xs rounded-md border border-red-200 text-red-600 hover:bg-red-50">Mark Disposed</button>
-                      </form>
+                      <ConfirmButton
+                        variant="danger"
+                        size="sm"
+                        confirmTitle="Mark as disposed?"
+                        confirmDescription={`Permanently mark ${it.itemCode} as disposed.`}
+                        confirmLabel="Mark Disposed"
+                        confirmVariant="danger"
+                        formAction={markItemDisposed.bind(null, it.id, path)}
+                        successTitle="Item marked as disposed"
+                        successMessage={it.itemCode}
+                      >
+                        Mark Disposed
+                      </ConfirmButton>
                     )}
                     {it.disposed && (
                       <form action={requestReplacement.bind(null, it.id, path)}>
-                        <button className="px-2 py-1 text-xs rounded-md bg-blue-600 text-white hover:bg-blue-700">Request Replacement</button>
+                        <Button type="submit" variant="primary" size="sm">Request Replacement</Button>
                       </form>
                     )}
                   </div>

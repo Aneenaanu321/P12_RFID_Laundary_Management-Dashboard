@@ -1,22 +1,18 @@
-import { FiltersSkeleton } from "@/components/DashboardFilters";
-import { KpiGridSkeleton } from "@/components/KpiCard";
-import { CardSkeleton } from "@/components/ui/Card";
-import { CustomerTableSkeleton } from "@/components/CustomerOverviewTable";
+import { TableSkeleton } from "@/components/ui/DataTable";
 
-export default function DashboardLoading() {
+export default function AppLoading() {
   return (
     <div>
       <div className="mb-6 animate-pulse">
-        <div className="h-6 w-72 rounded bg-[var(--surface-muted)]" />
-        <div className="h-4 w-96 max-w-full rounded bg-[var(--surface-muted)] mt-2" />
+        <div className="h-3 w-28 rounded bg-[var(--surface-muted)] mb-2" />
+        <div className="h-7 w-56 rounded bg-[var(--surface-muted)]" />
+        <div className="h-4 w-80 max-w-full rounded bg-[var(--surface-muted)] mt-2" />
       </div>
-      <FiltersSkeleton />
-      <KpiGridSkeleton />
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-6">
-        <CardSkeleton className="lg:col-span-2" height={280} />
-        <CardSkeleton height={280} />
+      <div className="mb-4 flex gap-2 animate-pulse">
+        <div className="h-9 w-40 rounded-lg bg-[var(--surface-muted)]" />
+        <div className="h-9 w-32 rounded-lg bg-[var(--surface-muted)]" />
       </div>
-      <CustomerTableSkeleton />
+      <TableSkeleton rows={8} cols={6} />
     </div>
   );
 }

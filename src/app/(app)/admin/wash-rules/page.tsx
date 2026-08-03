@@ -1,5 +1,7 @@
 import { PageHeader } from "@/components/layout/PageHeader";
 import { Card, CardHeader } from "@/components/ui/Card";
+import { Button } from "@/components/ui/Button";
+import { FormInput } from "@/components/ui/FormField";
 import { getItemTypes } from "@/lib/queries";
 import { updateWashRuleAction } from "@/lib/adminActions";
 
@@ -14,21 +16,27 @@ export default function Page() {
             <CardHeader title={t.name} subtitle={t.category} />
             <form action={updateWashRuleAction} className="px-5 pb-5 grid grid-cols-3 gap-3">
               <input type="hidden" name="id" value={t.id} />
-              <label className="text-xs text-slate-500">
-                Max Cycles
-                <input name="maxWashCycles" type="number" defaultValue={t.maxWashCycles} className="mt-1 w-full px-2 py-1.5 text-sm rounded-md border border-slate-200" />
-              </label>
-              <label className="text-xs text-slate-500">
-                Monitor %
-                <input name="monitorPct" type="number" defaultValue={t.monitorThresholdPct} className="mt-1 w-full px-2 py-1.5 text-sm rounded-md border border-slate-200" />
-              </label>
-              <label className="text-xs text-slate-500">
-                Near EOL %
-                <input name="eolPct" type="number" defaultValue={t.nearEolThresholdPct} className="mt-1 w-full px-2 py-1.5 text-sm rounded-md border border-slate-200" />
-              </label>
-              <button type="submit" className="col-span-3 mt-1 py-1.5 text-sm font-medium rounded-lg bg-blue-600 text-white hover:bg-blue-700">
+              <FormInput
+                label="Max Cycles"
+                name="maxWashCycles"
+                type="number"
+                defaultValue={t.maxWashCycles}
+              />
+              <FormInput
+                label="Monitor %"
+                name="monitorPct"
+                type="number"
+                defaultValue={t.monitorThresholdPct}
+              />
+              <FormInput
+                label="Near EOL %"
+                name="eolPct"
+                type="number"
+                defaultValue={t.nearEolThresholdPct}
+              />
+              <Button type="submit" variant="primary" className="col-span-3 mt-1">
                 Save Rule
-              </button>
+              </Button>
             </form>
           </Card>
         ))}

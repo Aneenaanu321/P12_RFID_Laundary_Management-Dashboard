@@ -10,12 +10,12 @@ export function Pagination({
   for (let p = start; p <= end; p++) pages.push(p);
 
   return (
-    <div className="flex items-center justify-between px-5 py-3 border-t border-slate-200 text-sm">
-      <span className="text-slate-500">Page {page} of {pageCount}</span>
+    <div className="flex items-center justify-between px-5 py-3 border-t border-[var(--border-subtle)] text-sm">
+      <span className="text-[var(--muted)]">Page {page} of {pageCount}</span>
       <div className="flex items-center gap-1">
         <Link
           href={buildHref(Math.max(1, page - 1))}
-          className={`px-2.5 py-1 rounded-md border border-slate-200 text-slate-600 hover:bg-slate-50 ${page === 1 ? "pointer-events-none opacity-40" : ""}`}
+          className={`px-2.5 py-1 rounded-md border border-[var(--border-subtle)] text-[var(--muted)] hover:bg-[var(--surface-muted)] a11y-focus ${page === 1 ? "pointer-events-none opacity-40" : ""}`}
         >
           Prev
         </Link>
@@ -23,14 +23,18 @@ export function Pagination({
           <Link
             key={p}
             href={buildHref(p)}
-            className={`px-2.5 py-1 rounded-md border text-sm ${p === page ? "bg-blue-600 text-white border-blue-600" : "border-slate-200 text-slate-600 hover:bg-slate-50"}`}
+            className={`px-2.5 py-1 rounded-md border text-sm a11y-focus ${
+              p === page
+                ? "bg-[var(--foreground)] text-[var(--card-bg)] border-[var(--foreground)]"
+                : "border-[var(--border-subtle)] text-[var(--muted)] hover:bg-[var(--surface-muted)]"
+            }`}
           >
             {p}
           </Link>
         ))}
         <Link
           href={buildHref(Math.min(pageCount, page + 1))}
-          className={`px-2.5 py-1 rounded-md border border-slate-200 text-slate-600 hover:bg-slate-50 ${page === pageCount ? "pointer-events-none opacity-40" : ""}`}
+          className={`px-2.5 py-1 rounded-md border border-[var(--border-subtle)] text-[var(--muted)] hover:bg-[var(--surface-muted)] a11y-focus ${page === pageCount ? "pointer-events-none opacity-40" : ""}`}
         >
           Next
         </Link>

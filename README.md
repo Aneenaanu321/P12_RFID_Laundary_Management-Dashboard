@@ -20,3 +20,8 @@ npm run seed   # generates data/app.db with the full demo dataset
 npm run dev    # http://localhost:3000
 ```
 
+## Deploy
+
+- **Render (recommended for this SQLite prototype):** see [`docs/DEPLOY.md`](docs/DEPLOY.md) and [`render.yaml`](render.yaml).
+- **Vercel:** not supported with local SQLite — needs Turso/Postgres first (details in the deploy doc).
+

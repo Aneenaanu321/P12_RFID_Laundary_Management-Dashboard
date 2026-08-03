@@ -15,7 +15,7 @@ export default function Page() {
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         <Card>
           <CardHeader title="Inventory Value by Customer" />
-          <div className="px-3 pb-3"><BarHorizontal data={byCustomer} dataKey="v" nameKey="customerName" color="#2563eb" /></div>
+          <div className="px-3 pb-3"><BarHorizontal data={byCustomer} dataKey="v" nameKey="customerName" color="var(--status-blue)" /></div>
         </Card>
         <Card>
           <CardHeader title="Inventory Value by Item Type" />
@@ -27,7 +27,7 @@ export default function Page() {
         </Card>
         <Card>
           <CardHeader title="Inventory Value Trend" subtitle="Last 30 days" />
-          <div className="px-3 pb-3"><TrendAreaChart data={series} dataKey="inventoryValue" xKey="dateLabel" color="#2563eb" /></div>
+          <div className="px-3 pb-3"><TrendAreaChart data={series} dataKey="inventoryValue" xKey="dateLabel" color="var(--status-blue)" /></div>
         </Card>
       </div>
     </div>

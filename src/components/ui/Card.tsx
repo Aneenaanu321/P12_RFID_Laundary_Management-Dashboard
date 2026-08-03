@@ -1,8 +1,16 @@
 import { ReactNode } from "react";
 
-export function Card({ children, className = "" }: { children: ReactNode; className?: string }) {
+export function Card({
+  children,
+  className = "",
+  id,
+}: {
+  children: ReactNode;
+  className?: string;
+  id?: string;
+}) {
   return (
-    <div className={`bg-[var(--card-bg)] rounded-xl border border-[var(--border-subtle)] shadow-sm ${className}`}>
+    <div id={id} className={`bg-[var(--card-bg)] rounded-[var(--radius-lg)] border border-[var(--border-subtle)] shadow-[var(--shadow-sm)] ${className}`}>
       {children}
     </div>
   );

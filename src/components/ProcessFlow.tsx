@@ -15,10 +15,10 @@ const STAGE_HREF: Record<string, string> = {
 
 const ANOMALY_STYLES = {
   none: {
-    card: "border-slate-200 bg-slate-50/80 hover:border-blue-300 hover:bg-white",
-    badge: "bg-blue-50 text-blue-700 ring-blue-100",
+    card: "border-[var(--border-subtle)] bg-[var(--surface-muted)] hover:border-[var(--status-blue)] hover:bg-[var(--card-bg)]",
+    badge: "bg-[var(--status-blue-bg)] text-[var(--status-blue)] ring-[var(--status-blue)]/20",
     bar: "bg-[var(--status-blue)]",
-    count: "text-slate-900",
+    count: "text-[var(--foreground)]",
   },
   amber: {
     card: "border-[var(--status-amber)]/40 bg-[var(--status-amber-bg)] hover:border-[var(--status-amber)] hover:bg-[var(--status-amber-bg)]",
@@ -47,7 +47,12 @@ export function ProcessFlow({ stages }: { stages: ProcessFlowStage[] }) {
           <Link
             key={s.key}
             href={STAGE_HREF[s.label] ?? "/operations"}
-            className={`group relative rounded-xl border px-4 py-3.5 shadow-sm transition-all hover:shadow-md ${style.card}`}
+            className={`group relative rounded-xl border px-4 py-3.5 shadow-sm transition-all hover:shadow-md a11y-focus ${style.card}`}
+            aria-label={
+              s.stuck > 0
+                ? `${s.label}: ${fmtNumber(s.count)} items, ${fmtPct(s.pct)}, ${fmtNumber(s.stuck)} stuck over ${s.maxHours} hours`
+                : `${s.label}: ${fmtNumber(s.count)} items, ${fmtPct(s.pct)}, within ${s.maxHours} hour SLA`
+            }
             title={
               s.stuck > 0
                 ? `${fmtNumber(s.stuck)} items past ${s.maxHours}h expected dwell`
@@ -60,18 +65,17 @@ export function ProcessFlow({ stages }: { stages: ProcessFlowStage[] }) {
               >
                 {i + 1}
               </span>
-              <span className="text-[10px] font-medium uppercase tracking-wider text-slate-400 group-hover:text-blue-500">
+              <span className="text-[10px] font-medium uppercase tracking-wider text-[var(--muted-fg)] group-hover:text-[var(--status-blue)]">
                 Stage
               </span>
             </div>
-            <p className="mt-2.5 text-sm font-medium text-slate-600 group-hover:text-slate-800">{s.label}</p>
+            <p className="mt-2.5 text-sm font-medium text-[var(--muted)] group-hover:text-[var(--foreground)]">{s.label}</p>
             <div className="mt-0.5 flex items-baseline gap-2">
               <p className={`text-xl font-semibold tabular-nums ${style.count}`}>{fmtNumber(s.count)}</p>
-              <span className="text-xs font-medium tabular-nums text-slate-400">{fmtPct(s.pct)}</span>
+              <span className="text-xs font-medium tabular-nums text-[var(--muted-fg)]">{fmtPct(s.pct)}</span>
             </div>
 
-            {/* Proportional flow width — wider = more items (bottleneck visible) */}
-            <div className="mt-3 h-1.5 w-full overflow-hidden rounded-full bg-slate-200/80" aria-hidden>
+            <div className="mt-3 h-1.5 w-full overflow-hidden rounded-full bg-[var(--border-subtle)]" aria-hidden>
               <div
                 className={`h-full rounded-full transition-[width] duration-500 ${style.bar}`}
                 style={{ width: `${flowWidth}%` }}
@@ -87,7 +91,7 @@ export function ProcessFlow({ stages }: { stages: ProcessFlowStage[] }) {
                 {fmtNumber(s.stuck)} stuck &gt; {s.maxHours}h
               </p>
             ) : (
-              <p className="mt-2 text-[11px] text-slate-400">Within {s.maxHours}h SLA</p>
+              <p className="mt-2 text-[11px] text-[var(--muted-fg)]">Within {s.maxHours}h SLA</p>
             )}
           </Link>
         );

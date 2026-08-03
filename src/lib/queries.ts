@@ -1,3 +1,4 @@
+import { cache } from "react";
 import { all, get, run } from "./db";
 
 // ---------------------------------------------------------------------------
@@ -49,7 +50,7 @@ const ITEM_SELECT = `
 // ---------------------------------------------------------------------------
 // Dashboard KPIs
 // ---------------------------------------------------------------------------
-export function getKpis(customerType?: string) {
+export const getKpis = cache((customerType?: string) => {
   const today = customerType
     ? getLiveKpiRow(customerType)
     : get<Record<string, number>>(`SELECT * FROM DailySnapshot ORDER BY date DESC LIMIT 1`);
@@ -63,7 +64,7 @@ export function getKpis(customerType?: string) {
     return ((Number(today[key]) - Number(weekAgo[key])) / Number(weekAgo[key])) * 100;
   };
   return { today, weekAgo, delta };
-}
+});
 
 function getLiveKpiRow(customerType?: string) {
   const where = customerType ? "WHERE c.type = ?" : "";
@@ -87,26 +88,32 @@ function getLiveKpiRow(customerType?: string) {
 
 export type SnapshotSeriesOpts = { days?: number; from?: string; to?: string };
 
+const getSnapshotByDays = cache((days: number) =>
+  all<Record<string, number | string>>(
+    `SELECT * FROM DailySnapshot ORDER BY date DESC LIMIT ?`,
+    [days]
+  ).reverse()
+);
+
+const getSnapshotByRange = cache((from: string, to: string) =>
+  all<Record<string, number | string>>(
+    `SELECT * FROM DailySnapshot WHERE date >= ? AND date <= ? ORDER BY date ASC`,
+    [from, to]
+  )
+);
+
+/** Request-memoized snapshot series (React cache; object args are normalized). */
 export function getSnapshotSeries(daysOrOpts: number | SnapshotSeriesOpts = 30) {
   if (typeof daysOrOpts === "number") {
-    return all<Record<string, number | string>>(
-      `SELECT * FROM DailySnapshot ORDER BY date DESC LIMIT ?`,
-      [daysOrOpts]
-    ).reverse();
+    return getSnapshotByDays(daysOrOpts);
   }
 
   const { days, from, to } = daysOrOpts;
   if (from && to) {
-    return all<Record<string, number | string>>(
-      `SELECT * FROM DailySnapshot WHERE date >= ? AND date <= ? ORDER BY date ASC`,
-      [from, to]
-    );
+    return getSnapshotByRange(from, to);
   }
 
-  return all<Record<string, number | string>>(
-    `SELECT * FROM DailySnapshot ORDER BY date DESC LIMIT ?`,
-    [days ?? 30]
-  ).reverse();
+  return getSnapshotByDays(days ?? 30);
 }
 
 /** Live KPI breakdown by customer type for a given metric. */
@@ -204,7 +211,7 @@ export type ProcessFlowStage = {
   anomaly: "none" | "amber" | "red";
 };
 
-export function getProcessFlow(): ProcessFlowStage[] {
+export const getProcessFlow = cache((): ProcessFlowStage[] => {
   const cutoffs = ZONE_STAGES.map((s) =>
     new Date(Date.now() - ZONE_STAGE_MAX_HOURS[s.key] * 3600 * 1000).toISOString()
   );
@@ -249,34 +256,69 @@ export function getProcessFlow(): ProcessFlowStage[] {
       anomaly,
     };
   });
-}
+});
 
 // ---------------------------------------------------------------------------
 // Customers
 // ---------------------------------------------------------------------------
-export function getCustomers(type?: string) {
+export type CustomerOverviewRow = Customer & {
+  totalItems: number;
+  inLaundry: number;
+  ready: number;
+  missing: number;
+  nearEol: number;
+  withCustomer: number;
+};
+
+const CUSTOMER_OVERVIEW_SELECT = `
+  SELECT c.*,
+    COUNT(i.id) as totalItems,
+    SUM(CASE WHEN i.currentStatus='IN_LAUNDRY' THEN 1 ELSE 0 END) as inLaundry,
+    SUM(CASE WHEN i.currentStatus='READY' THEN 1 ELSE 0 END) as ready,
+    SUM(CASE WHEN i.missing=1 THEN 1 ELSE 0 END) as missing,
+    SUM(CASE WHEN i.lifecycleStatus='NEAR_END_OF_LIFE' THEN 1 ELSE 0 END) as nearEol,
+    SUM(CASE WHEN i.currentStatus='ACTIVE' THEN 1 ELSE 0 END) as withCustomer
+   FROM Customer c
+   LEFT JOIN Item i ON i.customerId = c.id
+`;
+
+export const getCustomers = cache((type?: string) => {
   const where = type ? `WHERE c.type = ?` : "";
   const params = type ? [type] : [];
-  return all<
-    Customer & {
-      totalItems: number; inLaundry: number; ready: number; missing: number; nearEol: number; withCustomer: number;
-    }
-  >(
-    `SELECT c.*,
-      COUNT(i.id) as totalItems,
-      SUM(CASE WHEN i.currentStatus='IN_LAUNDRY' THEN 1 ELSE 0 END) as inLaundry,
-      SUM(CASE WHEN i.currentStatus='READY' THEN 1 ELSE 0 END) as ready,
-      SUM(CASE WHEN i.missing=1 THEN 1 ELSE 0 END) as missing,
-      SUM(CASE WHEN i.lifecycleStatus='NEAR_END_OF_LIFE' THEN 1 ELSE 0 END) as nearEol,
-      SUM(CASE WHEN i.currentStatus='ACTIVE' THEN 1 ELSE 0 END) as withCustomer
-     FROM Customer c
-     LEFT JOIN Item i ON i.customerId = c.id
+  return all<CustomerOverviewRow>(
+    `${CUSTOMER_OVERVIEW_SELECT}
      ${where}
      GROUP BY c.id
      ORDER BY totalItems DESC`,
     params
   );
-}
+});
+
+/** Paginated customer overview for the dashboard table. */
+export const getCustomersPage = cache((typeKey: string, page: number, pageSize: number) => {
+  const type = typeKey === "__all__" ? undefined : typeKey;
+  const where = type ? `WHERE c.type = ?` : "";
+  const params = type ? [type] : [];
+  const totalRow = get<{ c: number }>(
+    `SELECT COUNT(*) as c FROM Customer c ${where}`,
+    params
+  );
+  const total = totalRow?.c ?? 0;
+  const pageCount = Math.max(1, Math.ceil(total / pageSize));
+  const safePage = Math.min(Math.max(1, page), pageCount);
+  const offset = (safePage - 1) * pageSize;
+
+  const rows = all<CustomerOverviewRow>(
+    `${CUSTOMER_OVERVIEW_SELECT}
+     ${where}
+     GROUP BY c.id
+     ORDER BY totalItems DESC
+     LIMIT ? OFFSET ?`,
+    [...params, pageSize, offset]
+  );
+
+  return { rows, total, page: safePage, pageCount, pageSize };
+});
 
 export function getCustomerById(id: string) {
   return get<Customer>(`SELECT * FROM Customer WHERE id = ?`, [id]);
@@ -425,6 +467,100 @@ export function getReaderStats() {
   const offline = get<{ c: number }>(`SELECT COUNT(*) as c FROM RfidReader WHERE status='OFFLINE'`)!.c;
   const totalReadsToday = get<{ s: number }>(`SELECT SUM(readsToday) as s FROM RfidReader`)!.s ?? 0;
   return { total, online, warning, offline, totalReadsToday, successRate: 98.7 };
+}
+
+/** Avg hours from first RECEIVING event to first DISPATCH event (completed cycles). */
+export function getAvgTurnaroundHours() {
+  const row = get<{ hours: number | null; samples: number }>(
+    `WITH recv AS (
+       SELECT itemId, MIN(timestamp) as t
+       FROM RfidEvent
+       WHERE zone = 'RECEIVING' OR eventType = 'RECEIVED'
+       GROUP BY itemId
+     ),
+     disp AS (
+       SELECT itemId, MIN(timestamp) as t
+       FROM RfidEvent
+       WHERE zone = 'DISPATCH' OR eventType = 'DISPATCHED'
+       GROUP BY itemId
+     )
+     SELECT AVG((julianday(d.t) - julianday(r.t)) * 24.0) as hours,
+            COUNT(*) as samples
+     FROM recv r
+     JOIN disp d ON d.itemId = r.itemId
+     WHERE d.t > r.t
+       AND (julianday(d.t) - julianday(r.t)) * 24.0 BETWEEN 0.5 AND 168`
+  );
+  return {
+    hours: row?.hours != null ? Number(row.hours) : 18,
+    samples: row?.samples ?? 0,
+  };
+}
+
+/** Daily avg turnaround hours for sparklines / trends. */
+export function getTurnaroundSeries(days = 30) {
+  return all<{ date: string; value: number }>(
+    `WITH recv AS (
+       SELECT itemId, MIN(timestamp) as t
+       FROM RfidEvent
+       WHERE zone = 'RECEIVING' OR eventType = 'RECEIVED'
+       GROUP BY itemId
+     ),
+     disp AS (
+       SELECT itemId, MIN(timestamp) as t
+       FROM RfidEvent
+       WHERE zone = 'DISPATCH' OR eventType = 'DISPATCHED'
+       GROUP BY itemId
+     ),
+     pairs AS (
+       SELECT date(d.t) as day,
+              (julianday(d.t) - julianday(r.t)) * 24.0 as hours
+       FROM recv r
+       JOIN disp d ON d.itemId = r.itemId
+       WHERE d.t > r.t
+         AND (julianday(d.t) - julianday(r.t)) * 24.0 BETWEEN 0.5 AND 168
+         AND d.t >= datetime('now', ?)
+     )
+     SELECT day as date, AVG(hours) as value
+     FROM pairs
+     GROUP BY day
+     ORDER BY day ASC`,
+    [`-${days} days`]
+  );
+}
+
+/** Avg replacement cost per item + utilization (% of inventory in active use). */
+export function getExecutiveMetrics(customerType?: string) {
+  const where = customerType ? "WHERE c.type = ?" : "";
+  const params = customerType ? [customerType] : [];
+  const row = get<{
+    totalItems: number;
+    activeUse: number;
+    inventoryValue: number;
+    avgCost: number;
+    avgCyclePrice: number;
+  }>(
+    `SELECT
+       COUNT(*) as totalItems,
+       COALESCE(SUM(CASE WHEN i.currentStatus IN ('ACTIVE','IN_LAUNDRY','READY') THEN 1 ELSE 0 END), 0) as activeUse,
+       COALESCE(SUM(i.value), 0) as inventoryValue,
+       COALESCE(AVG(i.value), 0) as avgCost,
+       COALESCE(AVG(it.pricePerCycle), 0) as avgCyclePrice
+     FROM Item i
+     JOIN ItemType it ON it.id = i.itemTypeId
+     JOIN Customer c ON c.id = i.customerId
+     ${where}`,
+    params
+  );
+  const total = Number(row?.totalItems ?? 0);
+  const activeUse = Number(row?.activeUse ?? 0);
+  return {
+    costPerItem: Number(row?.avgCost ?? 0),
+    avgCyclePrice: Number(row?.avgCyclePrice ?? 0),
+    utilizationRate: total ? (activeUse / total) * 100 : 0,
+    inventoryValue: Number(row?.inventoryValue ?? 0),
+    totalItems: total,
+  };
 }
 
 // ---------------------------------------------------------------------------
@@ -595,6 +731,36 @@ export function getAlertCounts() {
   return all<{ severity: string; c: number }>(
     `SELECT severity, COUNT(*) as c FROM Alert WHERE resolved = 0 GROUP BY severity`
   );
+}
+
+export type AlertRow = {
+  id: string;
+  severity: string;
+  message: string;
+  category: string;
+  relatedType: string | null;
+  relatedId: string | null;
+  createdAt: string;
+  resolved: number;
+};
+
+/** Top unresolved critical alerts for the dashboard Live Alerts widget. */
+export function getCriticalAlerts(limit = 3) {
+  return all<AlertRow>(
+    `SELECT * FROM Alert WHERE resolved = 0 AND severity = 'CRITICAL' ORDER BY createdAt DESC LIMIT ?`,
+    [limit]
+  );
+}
+
+/** Live ops counts for SSE-driven KPI updates (in laundry / clean & ready). */
+export function getLiveOpsKpis() {
+  const row = getLiveKpiRow();
+  return {
+    inLaundry: Number(row?.inLaundry ?? 0),
+    ready: Number(row?.ready ?? 0),
+    withCustomers: Number(row?.withCustomers ?? 0),
+    totalItems: Number(row?.totalItems ?? 0),
+  };
 }
 
 // ---------------------------------------------------------------------------

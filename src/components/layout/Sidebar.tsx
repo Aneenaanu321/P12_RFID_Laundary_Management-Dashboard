@@ -3,6 +3,7 @@
 import Image from "next/image";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { NAV, hasPermission, ROLE_LABELS } from "@/lib/nav";
 import {
   LayoutDashboard, Settings, LogOut, Radio, WashingMachine, Inbox,
@@ -11,8 +12,9 @@ import {
   Activity, Wifi, History, RefreshCw, Clock3, Trash2, Replace,
   AlertTriangle, Scale, TrendingDown, Users, BarChart3, PieChart,
   LineChart, FileText, Coins, Bell, Shield, Boxes, ListChecks, Cpu,
-  Menu, type LucideIcon,
+  Menu, ChevronDown, type LucideIcon,
 } from "lucide-react";
+import { Button } from "@/components/ui/Button";
 
 const NAV_ICONS: Record<string, LucideIcon> = {
   "/": LayoutDashboard,
@@ -59,6 +61,19 @@ const NAV_ICONS: Record<string, LucideIcon> = {
   "/admin/settings": Settings,
 };
 
+const COLLAPSED_SECTIONS_KEY = "sidebar-collapsed-sections";
+
+function loadCollapsedSections(): Record<string, boolean> {
+  try {
+    const raw = localStorage.getItem(COLLAPSED_SECTIONS_KEY);
+    if (!raw) return {};
+    const parsed = JSON.parse(raw) as unknown;
+    return parsed && typeof parsed === "object" ? (parsed as Record<string, boolean>) : {};
+  } catch {
+    return {};
+  }
+}
+
 export function Sidebar({
   role,
   name,
@@ -72,6 +87,39 @@ export function Sidebar({
 }) {
   const pathname = usePathname();
   const initials = name.split(" ").map((n) => n[0]).slice(0, 2).join("");
+  const navRef = useRef<HTMLElement>(null);
+  const activeRef = useRef<HTMLAnchorElement>(null);
+  const [collapsedSections, setCollapsedSections] = useState<Record<string, boolean>>({});
+
+  const activeSectionKey = useMemo(() => {
+    for (let si = 0; si < NAV.length; si++) {
+      const section = NAV[si];
+      const key = section.heading ?? `section-${si}`;
+      const match = section.items.some((item) =>
+        item.href === "/" ? pathname === "/" : pathname.startsWith(item.href)
+      );
+      if (match) return key;
+    }
+    return null;
+  }, [pathname]);
+
+  useEffect(() => {
+    setCollapsedSections(loadCollapsedSections());
+  }, []);
+
+  useEffect(() => {
+    if (!activeSectionKey) return;
+    setCollapsedSections((prev) => {
+      if (!prev[activeSectionKey]) return prev;
+      const next = { ...prev, [activeSectionKey]: false };
+      localStorage.setItem(COLLAPSED_SECTIONS_KEY, JSON.stringify(next));
+      return next;
+    });
+  }, [activeSectionKey]);
+
+  useEffect(() => {
+    activeRef.current?.scrollIntoView({ block: "nearest", behavior: "smooth" });
+  }, [pathname, open]);
 
   function handleNavigate() {
     if (typeof window !== "undefined" && window.matchMedia("(max-width: 1023px)").matches && open) {
@@ -79,18 +127,31 @@ export function Sidebar({
     }
   }
 
+  function toggleSection(key: string) {
+    setCollapsedSections((prev) => {
+      const next = { ...prev, [key]: !prev[key] };
+      localStorage.setItem(COLLAPSED_SECTIONS_KEY, JSON.stringify(next));
+      return next;
+    });
+  }
+
+  const showLabels = open;
+  const widthClass = open ? "w-64" : "w-14";
+
   return (
     <aside
-      className={`fixed inset-y-0 left-0 z-50 flex flex-col bg-[var(--navy-950)] text-slate-300
+      className={`flex h-screen flex-col bg-[var(--navy-950)] text-slate-300
         transition-[width] duration-300 ease-in-out overflow-hidden
-        ${open ? "w-64" : "w-14"}`}
+        ${widthClass}
+        max-lg:fixed max-lg:inset-y-0 max-lg:left-0 max-lg:z-50
+        lg:sticky lg:top-0 lg:shrink-0`}
     >
       <div
         className={`flex items-center h-16 border-b border-white/10 shrink-0 ${
-          open ? "gap-2 px-3" : "justify-center px-1"
+          showLabels ? "gap-2 px-3" : "justify-center px-1"
         }`}
       >
-        {open && (
+        {showLabels && (
           <Link href="/" className="flex items-center min-w-0 flex-1" aria-label="ibTech home" onClick={handleNavigate}>
             <Image
               src="/brand/ibtech-logo-dark.png"
@@ -102,59 +163,86 @@ export function Sidebar({
             />
           </Link>
         )}
-        <button
+        <Button
           type="button"
+          variant="ghost"
+          size="icon"
           onClick={onToggle}
-          className="h-9 w-9 shrink-0 flex items-center justify-center rounded-md text-slate-300 hover:bg-white/10 hover:text-white"
+          className="shrink-0 text-slate-300 hover:bg-white/10 hover:text-white"
           aria-label={open ? "Collapse sidebar" : "Expand sidebar"}
           aria-expanded={open}
         >
-          <Menu size={20} />
-        </button>
+          <Menu size={20} aria-hidden />
+        </Button>
       </div>
 
-      <nav className={`flex-1 overflow-y-auto overflow-x-hidden py-3 ${open ? "px-3" : "px-1.5"}`}>
+      <nav ref={navRef} className={`flex-1 overflow-y-auto overflow-x-hidden py-3 ${showLabels ? "px-3" : "px-1.5"}`}>
         {NAV.map((section, si) => {
           const visibleItems = section.items.filter((it) => hasPermission(role, it.permission));
           if (visibleItems.length === 0) return null;
+          const sectionKey = section.heading ?? `section-${si}`;
+          const isCollapsed = Boolean(section.heading && collapsedSections[sectionKey] && showLabels);
+          const sectionHasActive = visibleItems.some((item) =>
+            item.href === "/" ? pathname === "/" : pathname.startsWith(item.href)
+          );
+
           return (
-            <div key={si} className={open ? "mb-3" : "mb-1"}>
-              {open && section.heading && (
-                <p className="px-2.5 mt-3 mb-1.5 text-[10px] font-semibold tracking-wider text-slate-500 uppercase">
-                  {section.heading}
-                </p>
-              )}
-              {!open && si > 0 && <div className="my-2 mx-auto w-6 border-t border-white/10" />}
-              {visibleItems.map((item) => {
-                const active = item.href === "/" ? pathname === "/" : pathname.startsWith(item.href);
-                const Icon = NAV_ICONS[item.href] ?? Package;
-                return (
-                  <Link
-                    key={item.href}
-                    href={item.href}
-                    title={item.label}
-                    onClick={handleNavigate}
-                    className={`flex items-center rounded-md text-[13px] mb-0.5 transition-colors ${
-                      open ? "gap-2.5 px-2.5 py-1.5" : "justify-center p-2"
-                    } ${
-                      active ? "bg-white/10 text-white font-medium" : "text-slate-400 hover:bg-white/5 hover:text-slate-200"
+            <div key={si} className={showLabels ? "mb-3" : "mb-1"}>
+              {showLabels && section.heading && (
+                <button
+                  type="button"
+                  onClick={() => toggleSection(sectionKey)}
+                  className="w-full flex items-center justify-between px-2.5 mt-3 mb-1.5 text-[10px] font-semibold tracking-wider text-slate-500 uppercase hover:text-slate-300 a11y-focus rounded"
+                  aria-expanded={!isCollapsed}
+                >
+                  <span>{section.heading}</span>
+                  <ChevronDown
+                    size={12}
+                    aria-hidden
+                    className={`transition-transform ${isCollapsed ? "-rotate-90" : ""} ${
+                      sectionHasActive ? "text-slate-300" : ""
                     }`}
-                  >
-                    <Icon
-                      size={open ? 15 : 18}
-                      className={`shrink-0 ${active && item.href === "/rfid/live" ? "text-teal-400" : ""}`}
-                    />
-                    {open && <span className="truncate">{item.label}</span>}
-                  </Link>
-                );
-              })}
+                  />
+                </button>
+              )}
+              {!showLabels && si > 0 && <div className="my-2 mx-auto w-6 border-t border-white/10" />}
+              {!isCollapsed &&
+                visibleItems.map((item) => {
+                  const active = item.href === "/" ? pathname === "/" : pathname.startsWith(item.href);
+                  const Icon = NAV_ICONS[item.href] ?? Package;
+                  return (
+                    <Link
+                      key={item.href}
+                      ref={active ? activeRef : undefined}
+                      href={item.href}
+                      title={item.label}
+                      aria-label={item.label}
+                      aria-current={active ? "page" : undefined}
+                      onClick={handleNavigate}
+                      className={`flex items-center rounded-md text-[13px] mb-0.5 transition-colors a11y-focus ${
+                        showLabels ? "gap-2.5 px-2.5 py-1.5" : "justify-center p-2"
+                      } ${
+                        active
+                          ? "bg-white/10 text-white font-medium"
+                          : "text-slate-400 hover:bg-white/5 hover:text-slate-200"
+                      }`}
+                    >
+                      <Icon
+                        size={showLabels ? 15 : 18}
+                        aria-hidden
+                        className={`shrink-0 ${active && item.href === "/rfid/live" ? "text-teal-400" : ""}`}
+                      />
+                      {showLabels && <span className="truncate">{item.label}</span>}
+                    </Link>
+                  );
+                })}
             </div>
           );
         })}
       </nav>
 
-      <div className={`border-t border-white/10 shrink-0 ${open ? "p-3" : "p-1.5"}`}>
-        {open ? (
+      <div className={`border-t border-white/10 shrink-0 ${showLabels ? "p-3" : "p-1.5"}`}>
+        {showLabels ? (
           <>
             <div className="flex items-center gap-2.5 px-2 py-2 rounded-md">
               <div className="h-8 w-8 rounded-full bg-slate-700 flex items-center justify-center text-xs font-semibold text-white shrink-0">
@@ -174,12 +262,15 @@ export function Sidebar({
                 <Settings size={14} /> Settings
               </Link>
               <form action="/api/auth/logout" method="POST" className="flex-1">
-                <button
+                <Button
                   type="submit"
-                  className="w-full flex items-center gap-1.5 px-2 py-1.5 rounded-md text-[12px] text-slate-400 hover:bg-white/5 hover:text-red-300"
+                  variant="ghost"
+                  size="sm"
+                  className="w-full justify-start text-[12px] text-slate-400 hover:bg-white/5 hover:text-red-300"
+                  iconLeft={<LogOut size={14} aria-hidden />}
                 >
-                  <LogOut size={14} /> Logout
-                </button>
+                  Logout
+                </Button>
               </form>
             </div>
           </>
@@ -194,19 +285,23 @@ export function Sidebar({
             <Link
               href="/admin/settings"
               title="Settings"
+              aria-label="Settings"
               onClick={handleNavigate}
-              className="h-8 w-8 flex items-center justify-center rounded-md text-slate-400 hover:bg-white/5 hover:text-slate-200"
+              className="h-8 w-8 flex items-center justify-center rounded-md text-slate-400 hover:bg-white/5 hover:text-slate-200 a11y-focus"
             >
-              <Settings size={16} />
+              <Settings size={16} aria-hidden />
             </Link>
             <form action="/api/auth/logout" method="POST">
-              <button
+              <Button
                 type="submit"
+                variant="ghost"
+                size="iconSm"
                 title="Logout"
-                className="h-8 w-8 flex items-center justify-center rounded-md text-slate-400 hover:bg-white/5 hover:text-red-300"
+                aria-label="Logout"
+                className="text-slate-400 hover:bg-white/5 hover:text-red-300"
               >
-                <LogOut size={16} />
-              </button>
+                <LogOut size={16} aria-hidden />
+              </Button>
             </form>
           </div>
         )}

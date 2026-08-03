@@ -1,53 +1,54 @@
-import { Suspense } from "react";
 import { PageHeader } from "@/components/layout/PageHeader";
-import { DashboardFilters, FiltersSkeleton } from "@/components/DashboardFilters";
-import { DashboardKpis } from "@/components/DashboardKpis";
-import { DashboardCharts } from "@/components/DashboardCharts";
-import { DashboardCustomers } from "@/components/DashboardCustomers";
-import { KpiGridSkeleton } from "@/components/KpiCard";
-import { CardSkeleton } from "@/components/ui/Card";
-import { CustomerTableSkeleton } from "@/components/CustomerOverviewTable";
+import { DashboardView } from "@/components/DashboardView";
+import { DashboardToolbar } from "@/components/DashboardToolbar";
+import { DashboardTour } from "@/components/DashboardTour";
 import { parseDashboardFilters } from "@/lib/dashboard-filters";
-
-function ChartsSkeleton() {
-  return (
-    <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-6">
-      <CardSkeleton className="lg:col-span-2" height={280} />
-      <CardSkeleton height={280} />
-    </div>
-  );
-}
+import { getSession } from "@/lib/auth";
+import { redirect } from "next/navigation";
 
 export default async function DashboardPage({
   searchParams,
 }: {
   searchParams: Promise<Record<string, string | string[] | undefined>>;
 }) {
+  const session = await getSession();
+  if (!session) redirect("/login");
+
   const sp = await searchParams;
   const filters = parseDashboardFilters(sp);
+  const fetchedAt = new Date().toISOString();
 
   return (
-    <div>
+    <div className="dashboard-print-root">
+      <div className="print-only-header" aria-hidden>
+        <p className="print-only-brand">ibTech · RFID Linen Management</p>
+        <h1>RFID Linen Management Overview</h1>
+        <p>
+          Management report · Generated {new Date(fetchedAt).toLocaleString("en-GB", {
+            day: "2-digit",
+            month: "short",
+            year: "numeric",
+            hour: "2-digit",
+            minute: "2-digit",
+          })}
+        </p>
+      </div>
+
       <PageHeader
         title="RFID Linen Management Overview"
         subtitle="Real-time visibility across inventory, laundry operations and item lifecycle."
+        action={<DashboardToolbar fetchedAt={fetchedAt} />}
+        className="no-print"
       />
 
-      <Suspense fallback={<FiltersSkeleton />}>
-        <DashboardFilters />
-      </Suspense>
+      <DashboardView
+        role={session.role}
+        userId={session.id}
+        filters={filters}
+        searchParams={sp}
+      />
 
-      <Suspense fallback={<KpiGridSkeleton />}>
-        <DashboardKpis customerType={filters.type} />
-      </Suspense>
-
-      <Suspense fallback={<ChartsSkeleton />}>
-        <DashboardCharts searchParams={sp} />
-      </Suspense>
-
-      <Suspense fallback={<CustomerTableSkeleton />}>
-        <DashboardCustomers customerType={filters.type} />
-      </Suspense>
+      <DashboardTour />
     </div>
   );
 }

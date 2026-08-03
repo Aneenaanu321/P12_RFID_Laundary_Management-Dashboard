@@ -20,7 +20,7 @@ export default function Page() {
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6">
         <Card>
           <CardHeader title="Wash Cycle Distribution" subtitle="Share of active inventory by cycles used" />
-          <div className="px-3 pb-3"><BarVertical data={distribution} dataKey="c" nameKey="bucket" color="#2563eb" /></div>
+          <div className="px-3 pb-3"><BarVertical data={distribution} dataKey="c" nameKey="bucket" color="var(--status-blue)" /></div>
         </Card>
         <Card>
           <CardHeader title="Items by Lifecycle Status" />
@@ -32,7 +32,7 @@ export default function Page() {
         </Card>
         <Card>
           <CardHeader title="Items Reaching End of Life" subtitle="Projected by month, based on remaining cycles" />
-          <div className="px-3 pb-3"><BarVertical data={forecast} dataKey="count" nameKey="label" color="#d97706" /></div>
+          <div className="px-3 pb-3"><BarVertical data={forecast} dataKey="count" nameKey="label" color="var(--status-amber)" /></div>
         </Card>
       </div>
 

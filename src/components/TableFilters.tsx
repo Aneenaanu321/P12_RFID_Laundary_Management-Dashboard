@@ -3,6 +3,9 @@
 import { useRouter, useSearchParams, usePathname } from "next/navigation";
 import { useState, useEffect, useTransition } from "react";
 import { X } from "lucide-react";
+import { Input } from "@/components/ui/Input";
+import { Select } from "@/components/ui/Select";
+import { Button } from "@/components/ui/Button";
 
 export type FilterOption = { value: string; label: string };
 export type FilterDef = { key: string; label: string; options: FilterOption[] };
@@ -27,34 +30,36 @@ export function TableFilters({ filters, searchPlaceholder = "Search..." }: { fil
 
   return (
     <div className="flex flex-wrap items-center gap-2 px-5 py-3 border-b border-slate-200 bg-slate-50/60">
-      <input
+      <Input
         value={search}
         onChange={(e) => setSearch(e.target.value)}
         onKeyDown={(e) => { if (e.key === "Enter") update("q", search); }}
         onBlur={() => update("q", search)}
         placeholder={searchPlaceholder}
-        className="px-3 py-1.5 text-sm rounded-lg border border-slate-200 bg-white w-56 focus:outline-none focus:ring-2 focus:ring-blue-100"
+        className="w-56"
       />
       {filters.map((f) => (
-        <select
+        <Select
           key={f.key}
           value={searchParams.get(f.key) ?? ""}
           onChange={(e) => update(f.key, e.target.value)}
-          className="px-2.5 py-1.5 text-sm rounded-lg border border-slate-200 bg-white text-slate-600 focus:outline-none focus:ring-2 focus:ring-blue-100"
         >
           <option value="">{f.label}</option>
           {f.options.map((o) => (
             <option key={o.value} value={o.value}>{o.label}</option>
           ))}
-        </select>
+        </Select>
       ))}
       {hasFilters && (
-        <button
+        <Button
+          variant="ghost"
+          size="sm"
           onClick={() => router.push(pathname)}
-          className="flex items-center gap-1 px-2.5 py-1.5 text-sm text-slate-500 hover:text-red-600"
+          iconLeft={<X size={13} aria-hidden />}
+          className="text-[var(--muted)] hover:text-[var(--status-red)]"
         >
-          <X size={13} /> Clear
-        </button>
+          Clear
+        </Button>
       )}
     </div>
   );

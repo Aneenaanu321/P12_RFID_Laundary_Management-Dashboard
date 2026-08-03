@@ -1,54 +1,122 @@
+"use client";
+
+import { useMemo } from "react";
 import { Item } from "@/lib/queries";
 import { EmptyState } from "@/components/ui/EmptyState";
+import { ActionToastButton } from "@/components/ui/ActionToastButton";
+import { ConfirmButton } from "@/components/ui/ConfirmButton";
 import { fmtAED, fmtDateTime, daysSince } from "@/lib/format";
 import { markItemFound, markItemLost, flagItem } from "@/lib/actions";
 import Link from "next/link";
+import {
+  DataTable,
+  DataTableHead,
+  DataTableHeaderRow,
+  DataTableSortHeader,
+  DataTableHeader,
+  DataTableBody,
+  DataTableRow,
+  DataTableCell,
+  sortByKey,
+  useDataTable,
+} from "@/components/ui/DataTable";
+
+function MissingItemsTableInner({ rows, path }: { rows: Item[]; path: string }) {
+  const { sortKey, sortDir } = useDataTable();
+  const sorted = useMemo(
+    () =>
+      sortByKey(rows, sortKey, sortDir, {
+        item: (r) => r.itemCode,
+        customer: (r) => r.customerName,
+        lastSeen: (r) => r.missingSince ?? "",
+        days: (r) => (r.missingSince ? daysSince(r.missingSince) : 0),
+        value: (r) => r.value,
+      }),
+    [rows, sortKey, sortDir]
+  );
+
+  return (
+    <>
+      <DataTableHead>
+        <DataTableHeaderRow>
+          <DataTableSortHeader sortKey="item">RFID / Item</DataTableSortHeader>
+          <DataTableSortHeader sortKey="customer">Customer</DataTableSortHeader>
+          <DataTableSortHeader sortKey="lastSeen">Last Seen</DataTableSortHeader>
+          <DataTableSortHeader sortKey="days">Days Missing</DataTableSortHeader>
+          <DataTableSortHeader sortKey="value">Value</DataTableSortHeader>
+          <DataTableHeader align="right">Actions</DataTableHeader>
+        </DataTableHeaderRow>
+      </DataTableHead>
+      <DataTableBody>
+        {sorted.map((it) => (
+          <DataTableRow key={it.id}>
+            <DataTableCell>
+              <Link
+                href={`/inventory/${it.itemCode}`}
+                className="font-medium text-[var(--status-blue)] hover:underline"
+              >
+                {it.itemCode}
+              </Link>
+              <p className="text-xs text-[var(--muted-fg)]">{it.itemTypeName}</p>
+              <p className="text-xs font-mono text-[var(--muted-fg)]">{it.epc}</p>
+            </DataTableCell>
+            <DataTableCell className="text-[var(--muted)]">{it.customerName}</DataTableCell>
+            <DataTableCell className="text-[var(--muted)]">
+              {it.missingSince ? fmtDateTime(it.missingSince) : "—"}
+            </DataTableCell>
+            <DataTableCell className="tabular-nums text-[var(--foreground)]">
+              {it.missingSince ? daysSince(it.missingSince) : "—"}
+            </DataTableCell>
+            <DataTableCell className="tabular-nums text-[var(--foreground)]">{fmtAED(it.value)}</DataTableCell>
+            <DataTableCell>
+              <div className="flex justify-end gap-1.5">
+                <ActionToastButton
+                  variant="secondary"
+                  size="sm"
+                  formAction={flagItem.bind(null, it.id, path)}
+                  successTitle="Flagged for investigation"
+                  successMessage={it.itemCode}
+                >
+                  Investigate
+                </ActionToastButton>
+                <ActionToastButton
+                  variant="success"
+                  size="sm"
+                  formAction={markItemFound.bind(null, it.id, path)}
+                  successTitle="Item marked as found"
+                  successMessage={it.itemCode}
+                >
+                  Mark Found
+                </ActionToastButton>
+                <ConfirmButton
+                  variant="danger"
+                  size="sm"
+                  confirmTitle="Mark as lost?"
+                  confirmDescription={`Permanently mark ${it.itemCode} as lost. This affects loss analytics and settlements.`}
+                  confirmLabel="Mark Lost"
+                  confirmVariant="danger"
+                  formAction={markItemLost.bind(null, it.id, path)}
+                  successTitle="Item marked as lost"
+                  successMessage={it.itemCode}
+                >
+                  Mark Lost
+                </ConfirmButton>
+              </div>
+            </DataTableCell>
+          </DataTableRow>
+        ))}
+      </DataTableBody>
+    </>
+  );
+}
 
 export function MissingItemsTable({ rows, path }: { rows: Item[]; path: string }) {
-  if (rows.length === 0) return <EmptyState title="No missing items" subtitle="Everything currently tracked is accounted for." />;
+  if (rows.length === 0) {
+    return <EmptyState title="No missing items" subtitle="Everything currently tracked is accounted for." />;
+  }
   return (
-    <div className="overflow-x-auto">
-      <table className="w-full text-sm">
-        <thead>
-          <tr className="border-b border-slate-200 text-left text-xs text-slate-500 uppercase tracking-wider">
-            <th className="px-5 py-3 font-medium">RFID</th>
-            <th className="px-3 py-3 font-medium">Item</th>
-            <th className="px-3 py-3 font-medium">Customer</th>
-            <th className="px-3 py-3 font-medium">Last Seen</th>
-            <th className="px-3 py-3 font-medium">Days Missing</th>
-            <th className="px-3 py-3 font-medium">Value</th>
-            <th className="px-3 py-3 font-medium text-right">Actions</th>
-          </tr>
-        </thead>
-        <tbody className="divide-y divide-slate-100">
-          {rows.map((it) => (
-            <tr key={it.id} className="hover:bg-slate-50">
-              <td className="px-5 py-3 font-mono text-xs text-slate-500">{it.epc}</td>
-              <td className="px-3 py-3">
-                <Link href={`/inventory/${it.itemCode}`} className="font-medium text-blue-700 hover:underline">{it.itemCode}</Link>
-                <p className="text-xs text-slate-400">{it.itemTypeName}</p>
-              </td>
-              <td className="px-3 py-3 text-slate-600">{it.customerName}</td>
-              <td className="px-3 py-3 text-slate-500">{it.missingSince ? fmtDateTime(it.missingSince) : "—"}</td>
-              <td className="px-3 py-3 tabular-nums text-slate-700">{it.missingSince ? daysSince(it.missingSince) : "—"}</td>
-              <td className="px-3 py-3 tabular-nums text-slate-700">{fmtAED(it.value)}</td>
-              <td className="px-3 py-3">
-                <div className="flex justify-end gap-1.5">
-                  <form action={flagItem.bind(null, it.id, path)}>
-                    <button className="px-2 py-1 text-xs rounded-md border border-slate-200 text-slate-600 hover:bg-slate-50">Investigate</button>
-                  </form>
-                  <form action={markItemFound.bind(null, it.id, path)}>
-                    <button className="px-2 py-1 text-xs rounded-md border border-green-200 text-green-700 hover:bg-green-50">Mark Found</button>
-                  </form>
-                  <form action={markItemLost.bind(null, it.id, path)}>
-                    <button className="px-2 py-1 text-xs rounded-md border border-red-200 text-red-600 hover:bg-red-50">Mark Lost</button>
-                  </form>
-                </div>
-              </td>
-            </tr>
-          ))}
-        </tbody>
-      </table>
-    </div>
+    <DataTable>
+      <MissingItemsTableInner rows={rows} path={path} />
+    </DataTable>
   );
 }

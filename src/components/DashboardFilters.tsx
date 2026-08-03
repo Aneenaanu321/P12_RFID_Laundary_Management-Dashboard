@@ -3,6 +3,9 @@
 import { useRouter, usePathname, useSearchParams } from "next/navigation";
 import { useTransition } from "react";
 import { CUSTOMER_TYPES, type RangePreset } from "@/lib/dashboard-filters";
+import { Input } from "@/components/ui/Input";
+import { Select } from "@/components/ui/Select";
+import { Button } from "@/components/ui/Button";
 
 const RANGE_OPTIONS: { value: RangePreset; label: string }[] = [
   { value: "7", label: "7d" },
@@ -50,56 +53,58 @@ export function DashboardFilters() {
 
   return (
     <div
-      className={`flex flex-wrap items-center gap-2 mb-6 ${pending ? "opacity-70" : ""}`}
+      className={`flex flex-wrap items-center gap-2 mb-6 no-print ${pending ? "opacity-70" : ""}`}
     >
       <div className="inline-flex rounded-lg border border-[var(--border-subtle)] bg-[var(--card-bg)] p-0.5">
         {RANGE_OPTIONS.map((opt) => {
           const active = range === opt.value || (opt.value === "30" && !searchParams.get("range") && range === "30");
           return (
-            <button
+            <Button
               key={opt.value}
               type="button"
+              variant={active ? "primary" : "ghost"}
+              size="sm"
               onClick={() => setRange(opt.value)}
-              className={`px-2.5 py-1.5 text-xs font-medium rounded-md transition-colors ${
+              className={
                 active
-                  ? "bg-[var(--foreground)] text-[var(--card-bg)]"
-                  : "text-[var(--muted)] hover:bg-[var(--surface-muted)]"
-              }`}
+                  ? "bg-[var(--foreground)] text-[var(--card-bg)] hover:bg-[var(--foreground)] hover:opacity-90"
+                  : undefined
+              }
             >
               {opt.label}
-            </button>
+            </Button>
           );
         })}
       </div>
 
       {range === "custom" && (
         <div className="flex items-center gap-1.5">
-          <input
+          <Input
             type="date"
             value={from}
             onChange={(e) => push({ range: "custom", from: e.target.value, to: to || e.target.value })}
-            className="px-2 py-1.5 text-xs rounded-lg border border-[var(--border-subtle)] bg-[var(--card-bg)] text-[var(--foreground)] focus:outline-none focus:ring-2 focus:ring-[var(--status-blue-bg)]"
+            className="w-auto text-xs py-1.5"
           />
           <span className="text-xs text-[var(--muted-fg)]">to</span>
-          <input
+          <Input
             type="date"
             value={to}
             onChange={(e) => push({ range: "custom", from: from || e.target.value, to: e.target.value })}
-            className="px-2 py-1.5 text-xs rounded-lg border border-[var(--border-subtle)] bg-[var(--card-bg)] text-[var(--foreground)] focus:outline-none focus:ring-2 focus:ring-[var(--status-blue-bg)]"
+            className="w-auto text-xs py-1.5"
           />
         </div>
       )}
 
-      <select
+      <Select
         value={type}
-        onChange={(e) => push({ type: e.target.value || null })}
-        className="px-2.5 py-1.5 text-xs rounded-lg border border-[var(--border-subtle)] bg-[var(--card-bg)] text-[var(--muted)] focus:outline-none focus:ring-2 focus:ring-[var(--status-blue-bg)]"
+        onChange={(e) => push({ type: e.target.value || null, page: null })}
+        className="text-xs"
       >
         <option value="">All customer types</option>
         {CUSTOMER_TYPES.map((t) => (
           <option key={t.value} value={t.value}>{t.label}</option>
         ))}
-      </select>
+      </Select>
 
       <label className="inline-flex items-center gap-2 px-2.5 py-1.5 text-xs text-[var(--muted)] rounded-lg border border-[var(--border-subtle)] bg-[var(--card-bg)] cursor-pointer select-none">
         <input

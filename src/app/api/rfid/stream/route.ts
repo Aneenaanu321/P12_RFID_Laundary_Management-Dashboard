@@ -1,4 +1,5 @@
-import { all, run } from "@/lib/db";
+import { all, get, run } from "@/lib/db";
+import { getLiveOpsKpis } from "@/lib/queries";
 import crypto from "node:crypto";
 
 export const dynamic = "force-dynamic";
@@ -14,6 +15,29 @@ const ZONE_NEXT: Record<string, { zone: string; eventType: string; readerZone: s
   READY: { zone: "DISPATCH", eventType: "DISPATCHED", readerZone: "Dispatch" },
   DISPATCH: { zone: "WITH_CUSTOMER", eventType: "RETURNED", readerZone: "Dispatch" },
 };
+
+let lastCriticalAlertAt = 0;
+
+function maybeCriticalAlert(itemCode: string, zone: string) {
+  const now = Date.now();
+  // At most one stream-generated critical every ~28s, ~25% chance when eligible.
+  if (now - lastCriticalAlertAt < 28_000 || Math.random() > 0.25) return null;
+
+  const openCritical = get<{ c: number }>(
+    `SELECT COUNT(*) as c FROM Alert WHERE resolved = 0 AND severity = 'CRITICAL' AND category = 'LIVE_MONITOR'`
+  );
+  if (Number(openCritical?.c ?? 0) >= 4) return null;
+
+  lastCriticalAlertAt = now;
+  const id = crypto.randomUUID();
+  const message = `Critical RFID alert: ${itemCode} requires attention after transition to ${zone.replace(/_/g, " ").toLowerCase()}.`;
+  const createdAt = new Date().toISOString();
+  run(
+    `INSERT INTO Alert (id, severity, message, category, relatedType, relatedId, createdAt, resolved) VALUES (?,?,?,?,?,?,?,0)`,
+    [id, "CRITICAL", message, "LIVE_MONITOR", null, null, createdAt]
+  );
+  return { id, severity: "CRITICAL" as const, message, category: "LIVE_MONITOR", createdAt };
+}
 
 function tick() {
   const candidates = all<{ id: string; itemCode: string; currentZone: string; itemTypeName: string; customerName: string }>(
@@ -42,6 +66,9 @@ function tick() {
     item.id,
   ]);
 
+  const kpis = getLiveOpsKpis();
+  const alert = maybeCriticalAlert(item.itemCode, next.zone);
+
   return {
     id: eventId,
     itemCode: item.itemCode,
@@ -51,12 +78,16 @@ function tick() {
     eventType: next.eventType,
     readerCode: reader.code,
     timestamp: new Date().toISOString(),
+    kpis,
+    alert,
   };
 }
 
 export async function GET() {
   const encoder = new TextEncoder();
   let closed = false;
+  let interval: ReturnType<typeof setInterval> | undefined;
+
   const stream = new ReadableStream({
     start(controller) {
       const send = () => {
@@ -69,12 +100,11 @@ export async function GET() {
         }
       };
       send();
-      const interval = setInterval(send, 2500);
-      // @ts-expect-error attach for cleanup
-      controller._interval = interval;
+      interval = setInterval(send, 2500);
     },
     cancel() {
       closed = true;
+      if (interval) clearInterval(interval);
     },
   });
 

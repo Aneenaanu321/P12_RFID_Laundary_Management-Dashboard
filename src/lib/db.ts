@@ -12,7 +12,14 @@ declare global {
   var __rfidDb: DatabaseSync | undefined;
 }
 
-const DB_PATH = path.join(process.cwd(), "data", "app.db");
+/** Override with DATABASE_PATH (file) or DATA_DIR (directory) for Render disks. */
+function resolveDbPath() {
+  if (process.env.DATABASE_PATH) return process.env.DATABASE_PATH;
+  const dir = process.env.DATA_DIR || path.join(process.cwd(), "data");
+  return path.join(dir, "app.db");
+}
+
+const DB_PATH = resolveDbPath();
 
 function createConnection(): DatabaseSync {
   const dir = path.dirname(DB_PATH);

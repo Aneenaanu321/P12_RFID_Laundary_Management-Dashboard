@@ -1,55 +1,109 @@
+"use client";
+
 import Link from "next/link";
+import { useMemo } from "react";
 import { Item } from "@/lib/queries";
 import { StatusBadge } from "@/components/ui/StatusBadge";
 import { fmtAED, fmtDateTime, titleCase } from "@/lib/format";
 import { EmptyState } from "@/components/ui/EmptyState";
+import {
+  DataTable,
+  DataTableHead,
+  DataTableHeaderRow,
+  DataTableSortHeader,
+  DataTableBody,
+  DataTableRow,
+  DataTableCell,
+  sortByKey,
+  useDataTable,
+} from "@/components/ui/DataTable";
 
-export function ItemsTable({ rows }: { rows: Item[] }) {
-  if (rows.length === 0) return <EmptyState title="No items match these filters" subtitle="Try adjusting search or filter criteria." />;
+function ItemsTableInner({ rows }: { rows: Item[] }) {
+  const { sortKey, sortDir } = useDataTable();
+
+  const sorted = useMemo(
+    () =>
+      sortByKey(rows, sortKey, sortDir, {
+        item: (r) => r.itemCode,
+        type: (r) => r.itemTypeName,
+        customer: (r) => r.customerName,
+        zone: (r) => r.currentZone,
+        status: (r) => (r.missing ? "MISSING" : r.currentStatus),
+        washes: (r) => r.washCycles,
+        lifecycle: (r) => r.lifecycleStatus,
+        value: (r) => r.value,
+        lastRead: (r) => r.lastReadAt ?? "",
+      }),
+    [rows, sortKey, sortDir]
+  );
 
   return (
-    <div className="overflow-x-auto">
-      <table className="w-full text-sm">
-        <thead>
-          <tr className="border-b border-slate-200 text-left text-xs text-slate-500 uppercase tracking-wider">
-            <th className="px-5 py-3 font-medium">RFID / Item</th>
-            <th className="px-3 py-3 font-medium">Type</th>
-            <th className="px-3 py-3 font-medium">Customer</th>
-            <th className="px-3 py-3 font-medium">Zone</th>
-            <th className="px-3 py-3 font-medium">Status</th>
-            <th className="px-3 py-3 font-medium">Wash Cycles</th>
-            <th className="px-3 py-3 font-medium">Lifecycle</th>
-            <th className="px-3 py-3 font-medium">Value</th>
-            <th className="px-3 py-3 font-medium">Last Read</th>
-          </tr>
-        </thead>
-        <tbody className="divide-y divide-slate-100">
-          {rows.map((it) => (
-            <tr key={it.id} className="hover:bg-slate-50">
-              <td className="px-5 py-3">
-                <Link href={`/inventory/${it.itemCode}`} className="block">
-                  <p className="font-medium text-blue-700 hover:underline">{it.itemCode}</p>
-                  <p className="text-xs text-slate-400 font-mono">{it.epc}</p>
-                </Link>
-              </td>
-              <td className="px-3 py-3 text-slate-600">{it.itemTypeName}</td>
-              <td className="px-3 py-3">
-                <Link href={`/customers/${it.customerId}`} className="text-slate-700 hover:text-blue-700 hover:underline">
-                  {it.customerName}
-                </Link>
-              </td>
-              <td className="px-3 py-3 text-slate-500">{titleCase(it.currentZone)}</td>
-              <td className="px-3 py-3"><StatusBadge status={it.missing ? "MISSING" : it.currentStatus} /></td>
-              <td className="px-3 py-3 text-slate-600 tabular-nums">
-                {it.washCycles} / {it.maxWashCycles}
-              </td>
-              <td className="px-3 py-3"><StatusBadge status={it.lifecycleStatus} /></td>
-              <td className="px-3 py-3 text-slate-600 tabular-nums">{fmtAED(it.value)}</td>
-              <td className="px-3 py-3 text-slate-500 whitespace-nowrap">{fmtDateTime(it.lastReadAt)}</td>
-            </tr>
-          ))}
-        </tbody>
-      </table>
-    </div>
+    <>
+      <DataTableHead>
+        <DataTableHeaderRow>
+          <DataTableSortHeader sortKey="item">RFID / Item</DataTableSortHeader>
+          <DataTableSortHeader sortKey="type">Type</DataTableSortHeader>
+          <DataTableSortHeader sortKey="customer">Customer</DataTableSortHeader>
+          <DataTableSortHeader sortKey="zone">Zone</DataTableSortHeader>
+          <DataTableSortHeader sortKey="status">Status</DataTableSortHeader>
+          <DataTableSortHeader sortKey="washes">Wash Cycles</DataTableSortHeader>
+          <DataTableSortHeader sortKey="lifecycle">Lifecycle</DataTableSortHeader>
+          <DataTableSortHeader sortKey="value">Value</DataTableSortHeader>
+          <DataTableSortHeader sortKey="lastRead">Last Read</DataTableSortHeader>
+        </DataTableHeaderRow>
+      </DataTableHead>
+      <DataTableBody>
+        {sorted.map((it) => (
+          <DataTableRow key={it.id}>
+            <DataTableCell>
+              <Link
+                href={`/inventory/${it.itemCode}`}
+                className="block rounded-sm a11y-focus"
+                aria-label={`Item ${it.itemCode}, EPC ${it.epc}`}
+              >
+                <p className="font-medium text-[var(--status-blue)] hover:underline">{it.itemCode}</p>
+                <p className="text-xs text-[var(--muted-fg)] font-mono">{it.epc}</p>
+              </Link>
+            </DataTableCell>
+            <DataTableCell className="text-[var(--muted)]">{it.itemTypeName}</DataTableCell>
+            <DataTableCell>
+              <Link
+                href={`/customers/${it.customerId}`}
+                className="rounded-sm text-[var(--foreground)] hover:text-[var(--status-blue)] hover:underline a11y-focus"
+                aria-label={`Customer ${it.customerName}`}
+              >
+                {it.customerName}
+              </Link>
+            </DataTableCell>
+            <DataTableCell className="text-[var(--muted)]">{titleCase(it.currentZone)}</DataTableCell>
+            <DataTableCell>
+              <StatusBadge status={it.missing ? "MISSING" : it.currentStatus} />
+            </DataTableCell>
+            <DataTableCell className="text-[var(--muted)] tabular-nums">
+              {it.washCycles} / {it.maxWashCycles}
+            </DataTableCell>
+            <DataTableCell>
+              <StatusBadge status={it.lifecycleStatus} />
+            </DataTableCell>
+            <DataTableCell className="text-[var(--muted)] tabular-nums">{fmtAED(it.value)}</DataTableCell>
+            <DataTableCell className="text-[var(--muted)] whitespace-nowrap">
+              {fmtDateTime(it.lastReadAt)}
+            </DataTableCell>
+          </DataTableRow>
+        ))}
+      </DataTableBody>
+    </>
+  );
+}
+
+export function ItemsTable({ rows }: { rows: Item[] }) {
+  if (rows.length === 0) {
+    return <EmptyState title="No items match these filters" subtitle="Try adjusting search or filter criteria." />;
+  }
+
+  return (
+    <DataTable>
+      <ItemsTableInner rows={rows} />
+    </DataTable>
   );
 }

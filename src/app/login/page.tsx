@@ -1,9 +1,9 @@
 "use client";
 
-import { useActionState } from "react";
+import { useActionState, useState, Suspense } from "react";
 import Link from "next/link";
 import { useSearchParams } from "next/navigation";
-import { Suspense } from "react";
+import { Eye, EyeOff } from "lucide-react";
 import {
   AuthShell,
   authButtonClass,
@@ -18,6 +18,7 @@ function LoginForm() {
   const resetOk = searchParams.get("reset") === "1";
   const from = searchParams.get("from") || "/";
   const [state, formAction, pending] = useActionState(loginAction, undefined);
+  const [showPassword, setShowPassword] = useState(false);
 
   return (
     <AuthShell title="Sign in" subtitle="Access your laundry operations dashboard.">
@@ -27,15 +28,20 @@ function LoginForm() {
         </p>
       )}
 
-      <form action={formAction} className="space-y-4">
+      <form action={formAction} className="space-y-4" autoComplete="on">
         <input type="hidden" name="from" value={from} />
+        <p className="text-[12px] text-[var(--auth-muted)] bg-[var(--auth-green-soft)]/60 border border-[var(--auth-green)]/15 rounded-lg px-3 py-2">
+          Demo: <span className="font-medium text-[var(--auth-ink)]">aneena.antony@ibtechintl.com</span>
+          {" · "}
+          <span className="font-medium text-[var(--auth-ink)]">Aneenaantony@123</span>
+        </p>
         <div>
           <label className={authLabelClass}>Email</label>
           <input
             name="email"
             type="email"
             required
-            autoComplete="email"
+            autoComplete="username"
             defaultValue="aneena.antony@ibtechintl.com"
             className={authInputClass}
           />
@@ -47,13 +53,25 @@ function LoginForm() {
               Forgot password?
             </Link>
           </div>
-          <input
-            name="password"
-            type="password"
-            required
-            autoComplete="current-password"
-            className={authInputClass}
-          />
+          <div className="relative">
+            <input
+              name="password"
+              type={showPassword ? "text" : "password"}
+              required
+              autoComplete="current-password"
+              defaultValue="Aneenaantony@123"
+              className={`${authInputClass} pr-11`}
+            />
+            <button
+              type="button"
+              onClick={() => setShowPassword((v) => !v)}
+              className="absolute right-2.5 top-1/2 -translate-y-1/2 p-1.5 rounded-md text-[var(--auth-muted)] hover:text-[var(--auth-ink)] hover:bg-black/5 transition-colors"
+              aria-label={showPassword ? "Hide password" : "Show password"}
+              aria-pressed={showPassword}
+            >
+              {showPassword ? <EyeOff size={18} strokeWidth={1.75} /> : <Eye size={18} strokeWidth={1.75} />}
+            </button>
+          </div>
         </div>
         <label className="flex items-center gap-2.5 cursor-pointer select-none">
           <input
