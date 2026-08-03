@@ -48,7 +48,7 @@ export default async function DashboardPage({
           className="mb-4 rounded-xl border border-[var(--status-amber)]/30 bg-[var(--status-amber-bg)] px-4 py-3 text-sm text-[var(--foreground)] no-print"
         >
           Demo inventory is still loading on this host. On Render the first boot after
-          sleep re-seeds automatically (a few minutes) — refresh this page shortly.
+          sleep re-seeds automatically (usually under a minute) — refresh this page shortly.
         </div>
       )}
 
