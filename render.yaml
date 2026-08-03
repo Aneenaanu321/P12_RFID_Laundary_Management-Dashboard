@@ -13,8 +13,8 @@ services:
     region: oregon
     branch: main
     autoDeploy: true
-    # Seed at build. On start, ensure-seed re-creates inventory if the free-tier
-    # filesystem was wiped (first boot after sleep can take several minutes).
+    # Seed at build (full). On start, ensure-seed re-creates inventory if the free-tier
+    # filesystem was wiped (lite seed — usually under a minute).
     buildCommand: npm ci && npm run seed && npm run build
     startCommand: npm run start
     healthCheckPath: /login

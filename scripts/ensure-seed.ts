@@ -4,15 +4,16 @@
  * Used on Render (and similar hosts) so the first deploy is usable.
  *
  * 1) Always ensure the demo admin exists (fast).
- * 2) If inventory data is missing, run the full seed (slow — prefer build-time).
+ * 2) If inventory data is missing, run seed in lite mode (fast enough for boot).
+ *    Full seed still runs at build time via `npm run seed`.
  */
 import { isSeeded } from "../src/lib/db";
 import { spawnSync } from "node:child_process";
 
-function runTsx(script: string): number {
+function runTsx(script: string, env: NodeJS.ProcessEnv = process.env): number {
   const result = spawnSync("npx", ["tsx", script], {
     stdio: "inherit",
-    env: process.env,
+    env,
     shell: process.platform === "win32",
   });
   return result.status ?? 1;
@@ -27,6 +28,7 @@ if (isSeeded()) {
 }
 
 console.log(
-  "[ensure-seed] Empty database detected — running npm run seed (this can take several minutes)…"
+  "[ensure-seed] Empty database detected — running lite seed (about a minute)…"
 );
-process.exit(runTsx("scripts/seed.ts"));
+// Lite seed keeps Render free-tier boots within health-check limits.
+process.exit(runTsx("scripts/seed.ts", { ...process.env, SEED_MODE: "lite" }));

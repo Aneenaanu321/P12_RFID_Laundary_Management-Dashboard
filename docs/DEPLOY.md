@@ -40,9 +40,12 @@ Demo login after seed:
 ### Persistent Disk (optional, paid)
 
 Free instances lose filesystem writes on redeploy / cold start. The start
-command runs `npm run ensure-seed`, which re-seeds inventory if `Item` is
-empty. That first boot after a wipe can take **several minutes** — wait for
-the deploy to become Live, then hard-refresh the dashboard.
+command runs `npm run ensure-seed` (via `npm start`), which re-seeds inventory
+in **lite** mode if `Item` is empty (usually under a minute). Wait for the
+deploy to become Live, then hard-refresh the dashboard.
+
+Full inventory (~125k items) is still created during **build** (`npm run seed`).
+Lite recovery is only for when the baked DB is missing after a wipe.
 
 For durable data across restarts (skip re-seed on every wake):
 

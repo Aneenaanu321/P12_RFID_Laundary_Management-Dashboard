@@ -54,14 +54,19 @@ db.exec(`
 // 1. Customers
 // ---------------------------------------------------------------------------
 type CustomerSeed = { name: string; code: string; type: string; total: number };
+
+/** Full demo ≈125k items. Lite ≈2.5k — used for fast hosted recovery when DB is empty. */
+const SEED_SCALE = process.env.SEED_MODE === "lite" ? 0.02 : 1;
+console.log(`Seed mode: ${process.env.SEED_MODE === "lite" ? "lite" : "full"} (scale=${SEED_SCALE})`);
+
 const customerSeeds: CustomerSeed[] = [
-  { name: "Hospital A", code: "HOSP-A", type: "HOSPITAL", total: 34000 },
-  { name: "Hospital B", code: "HOSP-B", type: "HOSPITAL", total: 19000 },
-  { name: "Gym A", code: "GYM-A", type: "GYM", total: 24000 },
-  { name: "Gym B", code: "GYM-B", type: "GYM", total: 14000 },
-  { name: "Hotel A", code: "HOTEL-A", type: "HOTEL", total: 20000 },
-  { name: "Hotel B", code: "HOTEL-B", type: "HOTEL", total: 10920 },
-  { name: "Spa A", code: "SPA-A", type: "SPA", total: 3500 },
+  { name: "Hospital A", code: "HOSP-A", type: "HOSPITAL", total: Math.max(80, Math.round(34000 * SEED_SCALE)) },
+  { name: "Hospital B", code: "HOSP-B", type: "HOSPITAL", total: Math.max(60, Math.round(19000 * SEED_SCALE)) },
+  { name: "Gym A", code: "GYM-A", type: "GYM", total: Math.max(60, Math.round(24000 * SEED_SCALE)) },
+  { name: "Gym B", code: "GYM-B", type: "GYM", total: Math.max(40, Math.round(14000 * SEED_SCALE)) },
+  { name: "Hotel A", code: "HOTEL-A", type: "HOTEL", total: Math.max(50, Math.round(20000 * SEED_SCALE)) },
+  { name: "Hotel B", code: "HOTEL-B", type: "HOTEL", total: Math.max(40, Math.round(10920 * SEED_SCALE)) },
+  { name: "Spa A", code: "SPA-A", type: "SPA", total: Math.max(30, Math.round(3500 * SEED_SCALE)) },
 ];
 
 const insCustomer = db.prepare(
