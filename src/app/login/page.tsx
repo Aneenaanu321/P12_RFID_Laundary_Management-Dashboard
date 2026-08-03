@@ -30,11 +30,6 @@ function LoginForm() {
 
       <form action={formAction} className="space-y-4" autoComplete="on">
         <input type="hidden" name="from" value={from} />
-        <p className="text-[12px] text-[var(--auth-muted)] bg-[var(--auth-green-soft)]/60 border border-[var(--auth-green)]/15 rounded-lg px-3 py-2">
-          Demo: <span className="font-medium text-[var(--auth-ink)]">aneena.antony@ibtechintl.com</span>
-          {" · "}
-          <span className="font-medium text-[var(--auth-ink)]">Aneenaantony@123</span>
-        </p>
         <div>
           <label className={authLabelClass}>Email</label>
           <input

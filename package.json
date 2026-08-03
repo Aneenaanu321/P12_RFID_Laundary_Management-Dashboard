@@ -5,10 +5,12 @@
   "scripts": {
     "dev": "next dev",
     "build": "next build",
-    "start": "next start",
+    "start": "tsx scripts/ensure-demo-user.ts && next start",
     "lint": "eslint",
     "seed": "tsx scripts/seed.ts",
     "ensure-seed": "tsx scripts/ensure-seed.ts",
+    "ensure-demo-user": "tsx scripts/ensure-demo-user.ts",
+
     "postinstall": "echo 'Run npm run seed to (re)generate demo data.'",
     "test:e2e": "playwright test",
     "test:e2e:ui": "playwright test --ui",
